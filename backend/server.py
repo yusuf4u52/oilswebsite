@@ -1,0 +1,533 @@
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from dotenv import load_dotenv
+from starlette.middleware.cors import CORSMiddleware
+from motor.motor_asyncio import AsyncIOMotorClient
+import os
+import logging
+import uuid
+import hmac
+import hashlib
+import random
+import string
+from pathlib import Path
+from pydantic import BaseModel, Field
+from typing import List, Optional
+from datetime import datetime, timezone, timedelta
+import jwt
+import bcrypt
+
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
+
+# --- Config ---
+MONGO_URL = os.environ['MONGO_URL']
+DB_NAME = os.environ['DB_NAME']
+JWT_SECRET = os.environ['JWT_SECRET']
+JWT_ALG = os.environ.get('JWT_ALGORITHM', 'HS256')
+ADMIN_EMAIL = os.environ['ADMIN_EMAIL']
+ADMIN_PASSWORD = os.environ['ADMIN_PASSWORD']
+OTP_MODE = os.environ.get('OTP_MODE', 'mock')
+OTP_MOCK_CODE = os.environ.get('OTP_MOCK_CODE', '123456')
+RAZORPAY_MODE = os.environ.get('RAZORPAY_MODE', 'mock')
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
+
+client = AsyncIOMotorClient(MONGO_URL)
+db = client[DB_NAME]
+
+app = FastAPI(title="Suryaa Oils API")
+api = APIRouter(prefix="/api")
+security = HTTPBearer(auto_error=False)
+
+# --- Helpers ---
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+def new_id() -> str:
+    return str(uuid.uuid4())
+
+def make_token(payload: dict, hours: int = 24 * 30) -> str:
+    data = {**payload, "exp": datetime.now(timezone.utc) + timedelta(hours=hours)}
+    return jwt.encode(data, JWT_SECRET, algorithm=JWT_ALG)
+
+def decode_token(token: str) -> dict:
+    return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+
+async def get_current_user(creds: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    if creds is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        data = decode_token(creds.credentials)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    if data.get("role") == "admin":
+        return {"id": data.get("sub"), "role": "admin", "email": data.get("email")}
+    user = await db.users.find_one({"id": data.get("sub")}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
+async def get_admin(user: dict = Depends(get_current_user)) -> dict:
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    return user
+
+# --- Models ---
+class OtpRequest(BaseModel):
+    mobile: str
+
+class OtpVerify(BaseModel):
+    mobile: str
+    code: str
+
+class AdminLogin(BaseModel):
+    email: str
+    password: str
+
+class UserProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+
+class Address(BaseModel):
+    id: str = Field(default_factory=new_id)
+    name: str
+    mobile: str
+    line1: str
+    line2: Optional[str] = ""
+    city: str
+    state: str
+    pincode: str
+    landmark: Optional[str] = ""
+    is_default: bool = False
+
+class AddressCreate(BaseModel):
+    name: str
+    mobile: str
+    line1: str
+    line2: Optional[str] = ""
+    city: str
+    state: str
+    pincode: str
+    landmark: Optional[str] = ""
+    is_default: bool = False
+
+class ProductVariant(BaseModel):
+    id: str = Field(default_factory=new_id)
+    size: str  # "500ml", "1L", "5L"
+    price: float
+    mrp: float
+    stock: int = 100
+
+class Product(BaseModel):
+    id: str = Field(default_factory=new_id)
+    slug: str
+    name: str
+    category: str  # groundnut | coconut | almond
+    short_description: str
+    description: str
+    image_url: str
+    gallery: List[str] = []
+    variants: List[ProductVariant]
+    highlights: List[str] = []
+    is_active: bool = True
+    created_at: str = Field(default_factory=now_iso)
+
+class ProductCreate(BaseModel):
+    slug: str
+    name: str
+    category: str
+    short_description: str
+    description: str
+    image_url: str
+    gallery: List[str] = []
+    variants: List[ProductVariant]
+    highlights: List[str] = []
+    is_active: bool = True
+
+class OrderItem(BaseModel):
+    product_id: str
+    variant_id: str
+    name: str
+    size: str
+    price: float
+    qty: int
+    image_url: str
+
+class OrderCreate(BaseModel):
+    items: List[OrderItem]
+    address_id: str
+    payment_method: str = "razorpay"  # razorpay | cod
+
+class PaymentVerify(BaseModel):
+    order_id: str
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+
+class OrderStatusUpdate(BaseModel):
+    status: str  # pending, confirmed, shipped, delivered, cancelled
+
+# --- Startup: seed ---
+@app.on_event("startup")
+async def startup():
+    await db.users.create_index("mobile", unique=True)
+    await db.products.create_index("slug", unique=True)
+    # Seed admin (as a doc, mainly for reference; auth uses env)
+    await seed_products_if_empty()
+    logger.info("Startup complete - Admin: %s", ADMIN_EMAIL)
+
+async def seed_products_if_empty():
+    count = await db.products.count_documents({})
+    if count > 0:
+        return
+    products = [
+        Product(
+            slug="cold-pressed-groundnut-oil",
+            name="Cold-Pressed Groundnut Oil",
+            category="groundnut",
+            short_description="Traditional wood-pressed groundnut oil, unrefined & unfiltered.",
+            description="Our cold-pressed groundnut oil is extracted from hand-picked, sun-dried peanuts using a traditional wooden ghani (kachi ghani). Rich in monounsaturated fats, vitamin E, and a natural nutty aroma. Perfect for everyday Indian cooking, tempering, and deep frying.",
+            image_url="https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5",
+            gallery=["https://images.unsplash.com/photo-1742524252643-d1f3fddd8cca?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzN8MHwxfHNlYXJjaHwyfHx3b29kZW4lMjBib3dsJTIwcGVhbnV0c3xlbnwwfHx8fDE3ODMzMTIzMzh8MA&ixlib=rb-4.1.0&q=85"],
+            variants=[
+                ProductVariant(size="500ml", price=280, mrp=350, stock=100),
+                ProductVariant(size="1L", price=520, mrp=650, stock=100),
+                ProductVariant(size="5L", price=2450, mrp=3100, stock=50),
+            ],
+            highlights=["100% Pure & Natural", "Wood-Pressed Kachi Ghani", "No Chemicals or Preservatives", "Rich in Vitamin E"],
+        ),
+        Product(
+            slug="virgin-coconut-oil",
+            name="Virgin Coconut Oil",
+            category="coconut",
+            short_description="Pure virgin coconut oil, cold-pressed from fresh Kerala coconuts.",
+            description="Cold-pressed from fresh, hand-selected coconuts sourced directly from Kerala farms. This unrefined virgin coconut oil retains its natural aroma, MCTs, and lauric acid — ideal for cooking, hair care, and skin nourishment.",
+            image_url="https://images.unsplash.com/photo-1597636319015-1fce74db8798?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzF8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMGNyYWNrZWQlMjBjb2NvbnV0JTIwd2hpdGUlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc4NjM4MzY2OHww&ixlib=rb-4.1.0&q=85",
+            gallery=[],
+            variants=[
+                ProductVariant(size="500ml", price=340, mrp=420, stock=100),
+                ProductVariant(size="1L", price=640, mrp=780, stock=100),
+                ProductVariant(size="5L", price=2950, mrp=3600, stock=40),
+            ],
+            highlights=["Cold-Pressed Virgin", "Kerala Origin", "Rich in MCTs & Lauric Acid", "Multi-purpose: Food, Hair & Skin"],
+        ),
+        Product(
+            slug="pure-almond-oil",
+            name="Pure Sweet Almond Oil",
+            category="almond",
+            short_description="Premium cold-pressed sweet almond oil from Kashmiri almonds.",
+            description="Made from sun-ripened Kashmiri almonds, our sweet almond oil is cold-pressed to preserve its light texture and delicate flavour. Packed with vitamin E, omega-3, and antioxidants. Ideal as a finishing oil, in baking, or for skin & hair regimens.",
+            image_url="https://images.pexels.com/photos/26595162/pexels-photo-26595162.jpeg",
+            gallery=[],
+            variants=[
+                ProductVariant(size="250ml", price=520, mrp=650, stock=80),
+                ProductVariant(size="500ml", price=980, mrp=1200, stock=80),
+                ProductVariant(size="1L", price=1850, mrp=2300, stock=40),
+            ],
+            highlights=["Kashmiri Almonds", "Cold-Pressed & Unrefined", "High in Vitamin E", "Culinary & Cosmetic Grade"],
+        ),
+        Product(
+            slug="filtered-groundnut-oil",
+            name="Filtered Groundnut Oil (Family Pack)",
+            category="groundnut",
+            short_description="Everyday filtered groundnut oil — light, mildly flavoured, high smoke point.",
+            description="Our filtered groundnut oil offers a lighter alternative to kachi ghani — mildly flavoured and with a high smoke point, perfect for daily Indian cooking and frying. Lab-tested for purity.",
+            image_url="https://images.unsplash.com/photo-1768689033119-c3ac1e437d20?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTV8MHwxfHNlYXJjaHwxfHxwb3VyaW5nJTIwcHVyZSUyMGdvbGRlbiUyMG9pbHxlbnwwfHx8fDE3ODYzODM2Njh8MA&ixlib=rb-4.1.0&q=85",
+            gallery=[],
+            variants=[
+                ProductVariant(size="1L", price=210, mrp=260, stock=200),
+                ProductVariant(size="5L", price=990, mrp=1250, stock=80),
+                ProductVariant(size="15L", price=2790, mrp=3500, stock=20),
+            ],
+            highlights=["Lab-Tested Purity", "High Smoke Point", "Family Pack Value", "Naturally Cholesterol Free"],
+        ),
+    ]
+    for p in products:
+        doc = p.model_dump()
+        await db.products.insert_one(doc)
+    logger.info("Seeded %d products", len(products))
+
+# --- Auth: Mobile OTP ---
+@api.post("/auth/otp/request")
+async def request_otp(data: OtpRequest):
+    mobile = data.mobile.strip()
+    if not mobile.isdigit() or len(mobile) != 10:
+        raise HTTPException(status_code=400, detail="Enter a valid 10-digit mobile number")
+    code = OTP_MOCK_CODE if OTP_MODE == "mock" else "".join(random.choices(string.digits, k=6))
+    await db.otps.update_one(
+        {"mobile": mobile},
+        {"$set": {"mobile": mobile, "code": code, "created_at": now_iso(),
+                  "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()}},
+        upsert=True,
+    )
+    # In mock mode we return the code for easy demo; in production we'd send via MSG91
+    return {"ok": True, "mode": OTP_MODE, "mobile": mobile,
+            "demo_code": code if OTP_MODE == "mock" else None,
+            "message": "OTP sent to your mobile"}
+
+@api.post("/auth/otp/verify")
+async def verify_otp(data: OtpVerify):
+    mobile = data.mobile.strip()
+    code = data.code.strip()
+    otp = await db.otps.find_one({"mobile": mobile}, {"_id": 0})
+    if not otp:
+        raise HTTPException(status_code=400, detail="Please request OTP first")
+    # In mock mode, accept the mock code OR any 6-digit code with default
+    valid = (code == otp["code"]) or (OTP_MODE == "mock" and code == OTP_MOCK_CODE)
+    if not valid:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+    # Get or create user
+    user = await db.users.find_one({"mobile": mobile}, {"_id": 0})
+    if not user:
+        user = {
+            "id": new_id(),
+            "mobile": mobile,
+            "name": "",
+            "email": "",
+            "created_at": now_iso(),
+        }
+        await db.users.insert_one(user)
+    token = make_token({"sub": user["id"], "role": "user", "mobile": mobile})
+    await db.otps.delete_one({"mobile": mobile})
+    return {"token": token, "user": {k: v for k, v in user.items() if k != "_id"}}
+
+@api.post("/auth/admin/login")
+async def admin_login(data: AdminLogin):
+    if data.email != ADMIN_EMAIL or data.password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid admin credentials")
+    token = make_token({"sub": "admin", "role": "admin", "email": ADMIN_EMAIL})
+    return {"token": token, "user": {"id": "admin", "role": "admin", "email": ADMIN_EMAIL}}
+
+@api.get("/auth/me")
+async def me(user: dict = Depends(get_current_user)):
+    return {"user": {k: v for k, v in user.items() if k != "_id"}}
+
+@api.put("/auth/me")
+async def update_me(data: UserProfileUpdate, user: dict = Depends(get_current_user)):
+    if user.get("role") == "admin":
+        raise HTTPException(status_code=400, detail="Not applicable")
+    upd = {k: v for k, v in data.model_dump().items() if v is not None}
+    if upd:
+        await db.users.update_one({"id": user["id"]}, {"$set": upd})
+    u = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+    return {"user": u}
+
+# --- Products ---
+@api.get("/products")
+async def list_products(category: Optional[str] = None):
+    q = {"is_active": True}
+    if category and category != "all":
+        q["category"] = category
+    docs = await db.products.find(q, {"_id": 0}).sort("created_at", 1).to_list(200)
+    return {"products": docs}
+
+@api.get("/products/{slug}")
+async def get_product(slug: str):
+    doc = await db.products.find_one({"slug": slug}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return doc
+
+@api.post("/admin/products")
+async def create_product(data: ProductCreate, admin: dict = Depends(get_admin)):
+    p = Product(**data.model_dump())
+    doc = p.model_dump()
+    await db.products.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@api.put("/admin/products/{product_id}")
+async def update_product(product_id: str, data: ProductCreate, admin: dict = Depends(get_admin)):
+    existing = await db.products.find_one({"id": product_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Product not found")
+    upd = data.model_dump()
+    # Ensure variants have ids
+    for v in upd["variants"]:
+        if not v.get("id"):
+            v["id"] = new_id()
+    await db.products.update_one({"id": product_id}, {"$set": upd})
+    return await db.products.find_one({"id": product_id}, {"_id": 0})
+
+@api.delete("/admin/products/{product_id}")
+async def delete_product(product_id: str, admin: dict = Depends(get_admin)):
+    res = await db.products.delete_one({"id": product_id})
+    return {"deleted": res.deleted_count}
+
+# --- Addresses ---
+@api.get("/addresses")
+async def list_addresses(user: dict = Depends(get_current_user)):
+    docs = await db.addresses.find({"user_id": user["id"]}, {"_id": 0}).to_list(50)
+    return {"addresses": docs}
+
+@api.post("/addresses")
+async def add_address(data: AddressCreate, user: dict = Depends(get_current_user)):
+    addr = Address(**data.model_dump()).model_dump()
+    addr["user_id"] = user["id"]
+    if addr["is_default"]:
+        await db.addresses.update_many({"user_id": user["id"]}, {"$set": {"is_default": False}})
+    # if no default yet, make this default
+    count = await db.addresses.count_documents({"user_id": user["id"]})
+    if count == 0:
+        addr["is_default"] = True
+    await db.addresses.insert_one(addr)
+    addr.pop("_id", None)
+    return addr
+
+@api.delete("/addresses/{addr_id}")
+async def delete_address(addr_id: str, user: dict = Depends(get_current_user)):
+    res = await db.addresses.delete_one({"id": addr_id, "user_id": user["id"]})
+    return {"deleted": res.deleted_count}
+
+# --- Orders / Payments ---
+def compute_totals(items: List[OrderItem]):
+    subtotal = sum(i.price * i.qty for i in items)
+    delivery = 0 if subtotal >= 499 else 49
+    total = round(subtotal + delivery, 2)
+    return round(subtotal, 2), delivery, total
+
+@api.post("/orders")
+async def create_order(data: OrderCreate, user: dict = Depends(get_current_user)):
+    if not data.items:
+        raise HTTPException(status_code=400, detail="Cart is empty")
+    address = await db.addresses.find_one({"id": data.address_id, "user_id": user["id"]}, {"_id": 0})
+    if not address:
+        raise HTTPException(status_code=400, detail="Address not found")
+    subtotal, delivery, total = compute_totals(data.items)
+    order_id = new_id()
+    razorpay_order_id = None
+    if data.payment_method == "razorpay":
+        if RAZORPAY_MODE == "live" and RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET:
+            import razorpay
+            rz = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+            rz_order = rz.order.create({
+                "amount": int(total * 100),
+                "currency": "INR",
+                "receipt": order_id[:40],
+                "payment_capture": 1,
+            })
+            razorpay_order_id = rz_order["id"]
+        else:
+            # Mock razorpay order id
+            razorpay_order_id = f"order_mock_{uuid.uuid4().hex[:14]}"
+    doc = {
+        "id": order_id,
+        "user_id": user["id"],
+        "user_mobile": user.get("mobile", ""),
+        "items": [i.model_dump() for i in data.items],
+        "address": address,
+        "payment_method": data.payment_method,
+        "payment_status": "pending",
+        "razorpay_order_id": razorpay_order_id,
+        "razorpay_payment_id": None,
+        "subtotal": subtotal,
+        "delivery_fee": delivery,
+        "total": total,
+        "status": "pending",
+        "created_at": now_iso(),
+    }
+    await db.orders.insert_one(doc)
+    return {
+        "order": {k: v for k, v in doc.items() if k != "_id"},
+        "razorpay_key_id": RAZORPAY_KEY_ID if RAZORPAY_MODE == "live" else "rzp_test_mock",
+        "razorpay_mode": RAZORPAY_MODE,
+    }
+
+@api.post("/orders/verify")
+async def verify_payment(data: PaymentVerify, user: dict = Depends(get_current_user)):
+    order = await db.orders.find_one({"id": data.order_id, "user_id": user["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    ok = True
+    if RAZORPAY_MODE == "live" and RAZORPAY_KEY_SECRET:
+        # verify signature
+        message = f"{data.razorpay_order_id}|{data.razorpay_payment_id}"
+        expected = hmac.new(RAZORPAY_KEY_SECRET.encode(), message.encode(), hashlib.sha256).hexdigest()
+        ok = hmac.compare_digest(expected, data.razorpay_signature)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Payment signature verification failed")
+    await db.orders.update_one({"id": data.order_id}, {"$set": {
+        "payment_status": "paid",
+        "status": "confirmed",
+        "razorpay_payment_id": data.razorpay_payment_id,
+        "razorpay_signature": data.razorpay_signature,
+        "paid_at": now_iso(),
+    }})
+    return {"ok": True}
+
+@api.post("/orders/{order_id}/cod-confirm")
+async def cod_confirm(order_id: str, user: dict = Depends(get_current_user)):
+    order = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    await db.orders.update_one({"id": order_id}, {"$set": {"status": "confirmed", "payment_status": "cod_pending"}})
+    return {"ok": True}
+
+@api.get("/orders")
+async def my_orders(user: dict = Depends(get_current_user)):
+    docs = await db.orders.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return {"orders": docs}
+
+@api.get("/orders/{order_id}")
+async def get_order(order_id: str, user: dict = Depends(get_current_user)):
+    doc = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return doc
+
+# --- Admin ---
+@api.get("/admin/orders")
+async def admin_orders(admin: dict = Depends(get_admin)):
+    docs = await db.orders.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return {"orders": docs}
+
+@api.put("/admin/orders/{order_id}/status")
+async def admin_update_order(order_id: str, data: OrderStatusUpdate, admin: dict = Depends(get_admin)):
+    allowed = {"pending", "confirmed", "shipped", "delivered", "cancelled"}
+    if data.status not in allowed:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    await db.orders.update_one({"id": order_id}, {"$set": {"status": data.status}})
+    return {"ok": True}
+
+@api.get("/admin/stats")
+async def admin_stats(admin: dict = Depends(get_admin)):
+    total_orders = await db.orders.count_documents({})
+    paid_orders = await db.orders.count_documents({"payment_status": "paid"})
+    pending = await db.orders.count_documents({"status": "pending"})
+    users = await db.users.count_documents({})
+    products = await db.products.count_documents({})
+    # revenue
+    pipeline = [{"$match": {"payment_status": {"$in": ["paid", "cod_pending"]}}},
+                {"$group": {"_id": None, "revenue": {"$sum": "$total"}}}]
+    rev_cursor = db.orders.aggregate(pipeline)
+    revenue = 0
+    async for r in rev_cursor:
+        revenue = r.get("revenue", 0)
+    return {"total_orders": total_orders, "paid_orders": paid_orders,
+            "pending_orders": pending, "users": users, "products": products,
+            "revenue": round(revenue, 2)}
+
+# --- Health ---
+@api.get("/")
+async def root():
+    return {"message": "Suryaa Oils API", "status": "ok"}
+
+# Mount
+app.include_router(api)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    client.close()
