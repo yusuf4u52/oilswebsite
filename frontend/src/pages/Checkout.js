@@ -29,6 +29,7 @@ export default function Checkout() {
   useEffect(() => {
     if (items.length === 0) { nav("/shop"); return; }
     loadAddresses().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const saveAddress = async (e) => {
