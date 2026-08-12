@@ -15,7 +15,7 @@ const CATS = [
 export default function Home() {
   const [products, setProducts] = useState([]);
   useEffect(() => {
-    api.get("/products").then((r) => setProducts(r.data.products)).catch(() => {});
+    api.get("/products").then((r) => setProducts(r.data.products ?? [])).catch(() => {});
   }, []);
 
   return (

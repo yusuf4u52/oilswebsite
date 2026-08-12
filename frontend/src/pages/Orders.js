@@ -14,7 +14,7 @@ export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    api.get("/orders").then((r) => setOrders(r.data.orders)).finally(() => setLoading(false));
+    api.get("/orders").then((r) => setOrders(r.data.orders ?? [])).finally(() => setLoading(false));
   }, []);
 
   return (

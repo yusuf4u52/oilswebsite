@@ -20,10 +20,11 @@ export default function Checkout() {
 
   const loadAddresses = async () => {
     const r = await api.get("/addresses");
-    setAddresses(r.data.addresses);
-    const def = r.data.addresses.find((a) => a.is_default) || r.data.addresses[0];
+    const addrs = r.data.addresses ?? [];
+    setAddresses(addrs);
+    const def = addrs.find((a) => a.is_default) || addrs[0];
     if (def) setSelectedId(def.id);
-    if (r.data.addresses.length === 0) setShowAdd(true);
+    if (addrs.length === 0) setShowAdd(true);
   };
 
   useEffect(() => {

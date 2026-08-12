@@ -18,7 +18,7 @@ export default function Shop() {
   useEffect(() => {
     setLoading(true);
     api.get(`/products${cat && cat !== "all" ? `?category=${cat}` : ""}`)
-      .then((r) => setProducts(r.data.products))
+      .then((r) => setProducts(r.data.products ?? []))
       .finally(() => setLoading(false));
   }, [cat]);
 

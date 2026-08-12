@@ -31,7 +31,7 @@ export default function AdminDashboard() {
       api.get("/admin/orders"),
       api.get("/products"),
     ]);
-    setStats(s.data); setOrders(o.data.orders); setProducts(p.data.products);
+    setStats(s.data); setOrders(o.data.orders ?? []); setProducts(p.data.products ?? []);
   };
 
   useEffect(() => { load().catch(() => {}); }, []);
