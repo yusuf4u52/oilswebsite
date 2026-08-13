@@ -1,4 +1,4 @@
-# Suryaa Oils Website
+# Premium Oils Website
 
 A React storefront for an edible oils brand with a FastAPI backend and MongoDB data layer.
 
@@ -37,21 +37,14 @@ uvicorn server:app --reload --host 0.0.0.0 --port 8000
 
 ## Environment variables
 
-Create a frontend environment file in [frontend](frontend) before running the app:
+Copy the example env files and fill in real values before running the app:
 
-```env
-REACT_APP_BACKEND_URL=http://localhost:8000
+```bash
+cp frontend/.env.example frontend/.env
+cp backend/.env.example backend/.env
 ```
 
-The backend expects MongoDB and auth values in its environment, including:
-
-```env
-MONGO_URL=your_mongo_connection_string
-DB_NAME=suryaa_oils
-JWT_SECRET=your_jwt_secret
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=your_admin_password
-```
+See [frontend/.env.example](frontend/.env.example) and [backend/.env.example](backend/.env.example) for the required variables.
 
 ## Deployment
 

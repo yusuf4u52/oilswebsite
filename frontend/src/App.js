@@ -26,7 +26,7 @@ function Header() {
     <header className="glass-header sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-6 md:px-10 py-4 flex items-center justify-between">
         <Link to="/" data-testid="nav-logo" className="flex items-center gap-2">
-          <span className="serif text-2xl font-semibold" style={{ color: "var(--brand)" }}>Suryaa</span>
+          <span className="serif text-2xl font-semibold" style={{ color: "var(--brand)" }}>Premium</span>
           <span className="label" style={{ color: "var(--amber)" }}>Oils</span>
         </Link>
         <nav className="hidden md:flex items-center gap-8 text-sm">
@@ -73,7 +73,7 @@ function Footer() {
     <footer className="mt-24 border-t" style={{ borderColor: "var(--line)" }}>
       <div className="max-w-7xl mx-auto px-6 md:px-10 py-14 grid md:grid-cols-4 gap-10">
         <div>
-          <div className="serif text-2xl font-semibold" style={{ color: "var(--brand)" }}>Suryaa Oils</div>
+          <div className="serif text-2xl font-semibold" style={{ color: "var(--brand)" }}>Premium Oils</div>
           <p className="mt-3 text-sm" style={{ color: "var(--ink-2)" }}>
             Cold-pressed, unrefined, honest oils — made the way your grandmother would have chosen.
           </p>
@@ -95,14 +95,14 @@ function Footer() {
         <div>
           <div className="label mb-3">Support</div>
           <ul className="space-y-2 text-sm" style={{ color: "var(--ink-2)" }}>
-            <li>+91 98765 43210</li>
-            <li>care@suryaaoils.in</li>
+            <li>+91 8407986619</li>
+            <li>care@premiumoils.in</li>
             <li>Mon–Sat, 9am–7pm</li>
           </ul>
         </div>
       </div>
       <div className="text-xs text-center py-6 border-t" style={{ color: "var(--ink-2)", borderColor: "var(--line)" }}>
-        © {new Date().getFullYear()} Suryaa Oils · Made with care in India
+        © {new Date().getFullYear()} Premium Oils · Made with care in India
       </div>
     </footer>
   );

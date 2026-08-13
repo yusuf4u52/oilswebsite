@@ -1,4 +1,4 @@
-"""Backend tests for Suryaa Oils API - covers products, auth (OTP+admin), addresses, orders (razorpay mock + cod), admin CRUD."""
+"""Backend tests for Premium Oils API - covers products, auth (OTP+admin), addresses, orders (razorpay mock + cod), admin CRUD."""
 import os
 import random
 import pytest

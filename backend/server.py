@@ -36,7 +36,7 @@ RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
 
-app = FastAPI(title="Suryaa Oils API")
+app = FastAPI(title="Premium Oils API")
 api = APIRouter(prefix="/api")
 security = HTTPBearer(auto_error=False)
 
@@ -511,7 +511,7 @@ async def admin_stats(admin: dict = Depends(get_admin)):
 # --- Health ---
 @api.get("/")
 async def root():
-    return {"message": "Suryaa Oils API", "status": "ok"}
+    return {"message": "Premium Oils API", "status": "ok"}
 
 # Mount
 app.include_router(api)

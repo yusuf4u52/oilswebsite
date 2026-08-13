@@ -89,7 +89,7 @@ export default function AdminDashboard() {
       <div className="border-b" style={{ borderColor: "var(--line)" }}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="serif text-xl" style={{ color: "var(--brand)" }}>Suryaa · Console</div>
+            <div className="serif text-xl" style={{ color: "var(--brand)" }}>Premium Oils · Console</div>
           </div>
           <button data-testid="admin-logout" onClick={() => { logout(); nav("/admin/login"); }} className="btn-ghost !py-2 !px-3 !rounded-md text-sm">
             <LogOut size={14}/> Logout

@@ -113,7 +113,7 @@ export default function Checkout() {
         key: r.data.razorpay_key_id,
         amount: Math.round(order.total * 100),
         currency: "INR",
-        name: "Suryaa Oils",
+        name: "Premium Oils",
         description: "Order Payment",
         order_id: order.razorpay_order_id,
         prefill: {

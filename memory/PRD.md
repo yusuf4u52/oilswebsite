@@ -1,4 +1,4 @@
-# Suryaa Oils — Product Requirements Document
+# Premium Oils — Product Requirements Document
 
 ## Overview
 An India-focused D2C ecommerce store for cold-pressed / wood-pressed edible oils: Groundnut, Coconut, Almond (culinary + cosmetic grade). Built as a modern, warm, artisan e-commerce experience.
