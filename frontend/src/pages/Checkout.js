@@ -5,6 +5,26 @@ import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
 import { Plus, MapPin, CreditCard, Truck } from "lucide-react";
 
+const RAZORPAY_SRC = "https://checkout.razorpay.com/v1/checkout.js";
+
+function loadRazorpayScript() {
+  if (window.Razorpay) return Promise.resolve();
+  const existing = document.querySelector(`script[src="${RAZORPAY_SRC}"]`);
+  if (existing) {
+    return new Promise((resolve, reject) => {
+      existing.addEventListener("load", resolve);
+      existing.addEventListener("error", reject);
+    });
+  }
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = RAZORPAY_SRC;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.body.appendChild(script);
+  });
+}
+
 export default function Checkout() {
   const { items, subtotal, delivery, total, clear } = useCart();
   const [addresses, setAddresses] = useState([]);
@@ -81,6 +101,12 @@ export default function Checkout() {
         clear();
         toast.success("Payment successful (demo)");
         nav("/orders");
+        return;
+      }
+      try {
+        await loadRazorpayScript();
+      } catch {
+        toast.error("Failed to load payment gateway. Please try again.");
         return;
       }
       const options = {
