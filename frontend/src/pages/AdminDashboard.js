@@ -227,6 +227,13 @@ export default function AdminDashboard() {
             </div>
             <div>
               <div className="label mb-2">Variants</div>
+              <div className="grid grid-cols-12 gap-2 mb-1 text-xs" style={{ color: "var(--ink-2)" }}>
+                <div className="col-span-3">Size</div>
+                <div className="col-span-3">Price</div>
+                <div className="col-span-3">MRP</div>
+                <div className="col-span-2">Stock</div>
+                <div className="col-span-1"></div>
+              </div>
               {form.variants.map((v, idx) => (
                 <div key={idx} className="grid grid-cols-12 gap-2 mb-2 items-center">
                   <input data-testid={`pf-v-size-${idx}`} className="input col-span-3" placeholder="Size" value={v.size} onChange={(e) => updateVariant(idx, { size: e.target.value })}/>
