@@ -61,6 +61,10 @@ export default function AdminDashboard() {
 
   const saveProduct = async (e) => {
     e.preventDefault();
+    if (!form.image_url) {
+      toast.error("Please upload a product image");
+      return;
+    }
     try {
       if (editing) await api.put(`/admin/products/${editing.id}`, form);
       else await api.post("/admin/products", form);
@@ -239,17 +243,14 @@ export default function AdminDashboard() {
               <select data-testid="pf-category" className="input" value={form.category} onChange={(e) => setForm({...form, category: e.target.value})}>
                 {["groundnut","coconut","almond","other"].map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              <div className="col-span-2 space-y-2">
-                <input data-testid="pf-image" required className="input w-full" placeholder="Image URL" value={form.image_url} onChange={(e) => setForm({...form, image_url: e.target.value})}/>
-                <div className="flex items-center gap-3">
-                  <label className="btn-ghost !py-1.5 !px-3 !rounded-md text-xs cursor-pointer">
-                    <UploadCloud size={12}/> {uploading ? "Uploading..." : "Upload from device"}
-                    <input data-testid="pf-image-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={uploadImage} disabled={uploading}/>
-                  </label>
-                  {form.image_url && (
-                    <img src={form.image_url} alt="Preview" className="h-12 w-12 object-cover rounded-md border" style={{ borderColor: "var(--line)" }}/>
-                  )}
-                </div>
+              <div className="col-span-2 flex items-center gap-3">
+                <label className="btn-ghost !py-1.5 !px-3 !rounded-md text-xs cursor-pointer">
+                  <UploadCloud size={12}/> {uploading ? "Uploading..." : form.image_url ? "Replace image" : "Upload image"}
+                  <input data-testid="pf-image-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={uploadImage} disabled={uploading}/>
+                </label>
+                {form.image_url && (
+                  <img src={form.image_url} alt="Preview" className="h-12 w-12 object-cover rounded-md border" style={{ borderColor: "var(--line)" }}/>
+                )}
               </div>
               <input data-testid="pf-short" required className="input col-span-2" placeholder="Short description" value={form.short_description} onChange={(e) => setForm({...form, short_description: e.target.value})}/>
               <textarea data-testid="pf-desc" required className="input col-span-2" rows={3} placeholder="Full description" value={form.description} onChange={(e) => setForm({...form, description: e.target.value})}/>

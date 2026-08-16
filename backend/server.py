@@ -203,8 +203,8 @@ async def seed_products_if_empty():
             category="groundnut",
             short_description="Traditional wood-pressed groundnut oil, unrefined & unfiltered.",
             description="Our cold-pressed groundnut oil is extracted from hand-picked, sun-dried peanuts using a traditional wooden ghani (kachi ghani). Rich in monounsaturated fats, vitamin E, and a natural nutty aroma. Perfect for everyday Indian cooking, tempering, and deep frying.",
-            image_url="https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5",
-            gallery=["https://images.unsplash.com/photo-1742524252643-d1f3fddd8cca?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzN8MHwxfHNlYXJjaHwyfHx3b29kZW4lMjBib3dsJTIwcGVhbnV0c3xlbnwwfHx8fDE3ODMzMTIzMzh8MA&ixlib=rb-4.1.0&q=85"],
+            image_url="",
+            gallery=[],
             variants=[
                 ProductVariant(size="500ml", price=280, mrp=350, stock=100),
                 ProductVariant(size="1L", price=520, mrp=650, stock=100),
@@ -218,7 +218,7 @@ async def seed_products_if_empty():
             category="coconut",
             short_description="Pure virgin coconut oil, cold-pressed from fresh Kerala coconuts.",
             description="Cold-pressed from fresh, hand-selected coconuts sourced directly from Kerala farms. This unrefined virgin coconut oil retains its natural aroma, MCTs, and lauric acid — ideal for cooking, hair care, and skin nourishment.",
-            image_url="https://images.unsplash.com/photo-1597636319015-1fce74db8798?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzF8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMGNyYWNrZWQlMjBjb2NvbnV0JTIwd2hpdGUlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc4NjM4MzY2OHww&ixlib=rb-4.1.0&q=85",
+            image_url="",
             gallery=[],
             variants=[
                 ProductVariant(size="500ml", price=340, mrp=420, stock=100),
@@ -233,7 +233,7 @@ async def seed_products_if_empty():
             category="almond",
             short_description="Premium cold-pressed sweet almond oil from Kashmiri almonds.",
             description="Made from sun-ripened Kashmiri almonds, our sweet almond oil is cold-pressed to preserve its light texture and delicate flavour. Packed with vitamin E, omega-3, and antioxidants. Ideal as a finishing oil, in baking, or for skin & hair regimens.",
-            image_url="https://images.pexels.com/photos/26595162/pexels-photo-26595162.jpeg",
+            image_url="",
             gallery=[],
             variants=[
                 ProductVariant(size="250ml", price=520, mrp=650, stock=80),
@@ -248,7 +248,7 @@ async def seed_products_if_empty():
             category="groundnut",
             short_description="Everyday filtered groundnut oil — light, mildly flavoured, high smoke point.",
             description="Our filtered groundnut oil offers a lighter alternative to kachi ghani — mildly flavoured and with a high smoke point, perfect for daily Indian cooking and frying. Lab-tested for purity.",
-            image_url="https://images.unsplash.com/photo-1768689033119-c3ac1e437d20?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTV8MHwxfHNlYXJjaHwxfHxwb3VyaW5nJTIwcHVyZSUyMGdvbGRlbiUyMG9pbHxlbnwwfHx8fDE3ODYzODM2Njh8MA&ixlib=rb-4.1.0&q=85",
+            image_url="",
             gallery=[],
             variants=[
                 ProductVariant(size="1L", price=210, mrp=260, stock=200),
