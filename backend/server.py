@@ -424,6 +424,15 @@ async def delete_address(addr_id: str, user: dict = Depends(get_current_user)):
     res = await db.addresses.delete_one({"id": addr_id, "user_id": user["id"]})
     return {"deleted": res.deleted_count}
 
+@api.put("/addresses/{addr_id}/default")
+async def set_default_address(addr_id: str, user: dict = Depends(get_current_user)):
+    addr = await db.addresses.find_one({"id": addr_id, "user_id": user["id"]})
+    if not addr:
+        raise HTTPException(status_code=404, detail="Address not found")
+    await db.addresses.update_many({"user_id": user["id"]}, {"$set": {"is_default": False}})
+    await db.addresses.update_one({"id": addr_id, "user_id": user["id"]}, {"$set": {"is_default": True}})
+    return {"ok": True}
+
 # --- Orders / Payments ---
 def compute_totals(items: List[OrderItem]):
     subtotal = sum(i.price * i.qty for i in items)

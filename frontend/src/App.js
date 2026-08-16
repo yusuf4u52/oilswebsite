@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
@@ -8,15 +9,77 @@ import ProductDetail from "@/pages/ProductDetail";
 import Login from "@/pages/Login";
 import Checkout from "@/pages/Checkout";
 import Orders from "@/pages/Orders";
+import Profile from "@/pages/Profile";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
 import CartDrawer from "@/components/CartDrawer";
-import { ShoppingBag, User, Package } from "lucide-react";
+import { ShoppingBag, User, Package, MapPin, LogOut, ChevronDown } from "lucide-react";
 import "@/App.css";
+
+function UserMenu() {
+  const { user, logout } = useAuth();
+  const nav = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const onClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  const firstName = (user?.name || "").trim().split(" ")[0] || "Account";
+  const go = (path) => { setOpen(false); nav(path); };
+
+  const items = [
+    { key: "profile", label: "Profile", icon: User, action: () => go("/profile") },
+    { key: "addresses", label: "Addresses", icon: MapPin, action: () => go("/profile?tab=addresses") },
+    { key: "orders", label: "Orders", icon: Package, action: () => go("/profile?tab=orders") },
+  ];
+
+  return (
+    <div className="relative" ref={ref}>
+      <button data-testid="nav-user-menu" onClick={() => setOpen((o) => !o)} className="btn-ghost !py-2 !px-3">
+        <User size={16}/>
+        <span className="hidden sm:inline">{firstName}</span>
+        <ChevronDown size={14} style={{ transition: "transform 150ms ease", transform: open ? "rotate(180deg)" : "none" }}/>
+      </button>
+      {open && (
+        <div
+          className="absolute right-0 mt-2 w-52 rounded-2xl border z-50 py-2"
+          style={{ borderColor: "var(--line)", background: "var(--bg)", boxShadow: "0 20px 40px -20px rgba(28,25,23,0.25)" }}
+        >
+          {items.map((it) => {
+            const Ic = it.icon;
+            return (
+              <button
+                key={it.key}
+                data-testid={`user-menu-${it.key}`}
+                onClick={it.action}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:opacity-70"
+              >
+                <Ic size={15}/> {it.label}
+              </button>
+            );
+          })}
+          <div className="my-1 mx-4" style={{ borderTop: "1px solid var(--line)" }}/>
+          <button
+            data-testid="user-menu-logout"
+            onClick={() => { setOpen(false); logout(); nav("/"); }}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:opacity-70"
+            style={{ color: "var(--ink-2)" }}
+          >
+            <LogOut size={15}/> Sign out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Header() {
   const { count, setOpen } = useCart();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
   const isAdmin = loc.pathname.startsWith("/admin");
@@ -38,14 +101,7 @@ function Header() {
         </nav>
         <div className="flex items-center gap-3">
           {user ? (
-            <>
-              <button data-testid="nav-orders" onClick={() => nav("/orders")} className="btn-ghost !py-2 !px-3">
-                <Package size={16}/><span className="hidden sm:inline">Orders</span>
-              </button>
-              <button data-testid="nav-logout" onClick={() => { logout(); nav("/"); }} className="btn-ghost !py-2 !px-3">
-                <User size={16}/><span className="hidden sm:inline">Sign out</span>
-              </button>
-            </>
+            <UserMenu />
           ) : (
             <button data-testid="nav-login" onClick={() => nav("/login")} className="btn-ghost !py-2 !px-3">
               <User size={16}/><span className="hidden sm:inline">Login</span>
@@ -142,6 +198,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/checkout" element={<RequireAuth><Checkout /></RequireAuth>} />
               <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
+              <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
             </Routes>
