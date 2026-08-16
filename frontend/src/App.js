@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { CartProvider, useCart } from "@/context/CartContext";
@@ -166,21 +166,18 @@ function Footer() {
 
 function RequireAuth({ children }) {
   const { user, ready } = useAuth();
-  const nav = useNavigate();
   const loc = useLocation();
   if (!ready) return null;
   if (!user) {
-    setTimeout(() => nav(`/login?next=${encodeURIComponent(loc.pathname + loc.search)}`), 0);
-    return null;
+    return <Navigate to={`/login?next=${encodeURIComponent(loc.pathname + loc.search)}`} replace />;
   }
   return children;
 }
 
 function RequireAdmin({ children }) {
   const { user, ready } = useAuth();
-  const nav = useNavigate();
   if (!ready) return null;
-  if (!user || user.role !== "admin") { setTimeout(() => nav("/admin/login"), 0); return null; }
+  if (!user || user.role !== "admin") return <Navigate to="/admin/login" replace />;
   return children;
 }
 
@@ -196,7 +193,7 @@ function App() {
               <Route path="/shop" element={<Shop />} />
               <Route path="/product/:slug" element={<ProductDetail />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/checkout" element={<RequireAuth><Checkout /></RequireAuth>} />
+              <Route path="/checkout" element={<Checkout />} />
               <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
               <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
               <Route path="/admin/login" element={<AdminLogin />} />

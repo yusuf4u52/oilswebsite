@@ -20,15 +20,46 @@ export default function Home() {
 
   return (
     <div>
+      {/* SHOP NOW — products, first thing on the page */}
+      <section className="max-w-7xl mx-auto px-6 md:px-10 pt-10 pb-16">
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <div className="label">Shop Now</div>
+            <h1 className="serif text-4xl sm:text-5xl mt-2">Fresh from the ghani.</h1>
+            <p className="mt-3 text-sm max-w-md" style={{ color: "var(--ink-2)" }}>
+              Cold-pressed groundnut, coconut and almond oils — bottled within 48 hours, delivered to your door.
+            </p>
+          </div>
+          <Link data-testid="products-view-all" to="/shop" className="text-sm underline underline-offset-4 whitespace-nowrap">Shop all</Link>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {products.slice(0, 8).map((p) => {
+            const from = Math.min(...p.variants.map((v) => v.price));
+            return (
+              <Link data-testid={`bestseller-${p.slug}`} to={`/product/${p.slug}`} key={p.id} className="product-tile block">
+                <div className="aspect-square rounded-xl overflow-hidden bg-white">
+                  <img src={p.image_url} alt={p.name} className="w-full h-full object-cover"/>
+                </div>
+                <div className="mt-4">
+                  <div className="label" style={{ color: "var(--amber)" }}>{p.category}</div>
+                  <div className="serif text-xl mt-1">{p.name}</div>
+                  <div className="mt-2 text-sm" style={{ color: "var(--ink-2)" }}>from {inr(from)}</div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
       {/* HERO */}
-      <section className="max-w-7xl mx-auto px-6 md:px-10 pt-14 pb-24">
+      <section className="max-w-7xl mx-auto px-6 md:px-10 pt-6 pb-24">
         <div className="grid md:grid-cols-12 gap-10 items-center">
           <div className="md:col-span-7 fade-in">
             <div className="chip">Cold-pressed · Small batch · India</div>
-            <h1 className="serif mt-6 text-5xl sm:text-6xl lg:text-7xl leading-[1.02] tracking-tight">
+            <h2 className="serif mt-6 text-5xl sm:text-6xl lg:text-7xl leading-[1.02] tracking-tight">
               Liquid gold,<br/>
               <span style={{ color: "var(--brand)" }}>the way it should be.</span>
-            </h1>
+            </h2>
             <p className="mt-6 max-w-lg text-lg" style={{ color: "var(--ink-2)" }}>
               Wood-pressed groundnut, virgin coconut and best quality almond oils —
               extracted slowly, bottled honestly, delivered to your door.
@@ -82,33 +113,6 @@ export default function Home() {
               </div>
             </Link>
           ))}
-        </div>
-      </section>
-
-      {/* BESTSELLERS */}
-      <section className="max-w-7xl mx-auto px-6 md:px-10 mt-24">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <div className="label">Bestsellers</div>
-            <h2 className="serif text-4xl sm:text-5xl mt-2">Fresh from the ghani.</h2>
-          </div>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.slice(0, 4).map((p) => {
-            const from = Math.min(...p.variants.map((v) => v.price));
-            return (
-              <Link data-testid={`bestseller-${p.slug}`} to={`/product/${p.slug}`} key={p.id} className="product-tile block">
-                <div className="aspect-square rounded-xl overflow-hidden bg-white">
-                  <img src={p.image_url} alt={p.name} className="w-full h-full object-cover"/>
-                </div>
-                <div className="mt-4">
-                  <div className="label" style={{ color: "var(--amber)" }}>{p.category}</div>
-                  <div className="serif text-xl mt-1">{p.name}</div>
-                  <div className="mt-2 text-sm" style={{ color: "var(--ink-2)" }}>from {inr(from)}</div>
-                </div>
-              </Link>
-            );
-          })}
         </div>
       </section>
 

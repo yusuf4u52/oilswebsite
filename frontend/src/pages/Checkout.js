@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api, { inr } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-import { Plus, MapPin, CreditCard, Truck } from "lucide-react";
+import { Plus, MapPin, CreditCard, Truck, Phone, ShieldCheck, CheckCircle2 } from "lucide-react";
 
 const RAZORPAY_SRC = "https://checkout.razorpay.com/v1/checkout.js";
 
@@ -25,13 +26,114 @@ function loadRazorpayScript() {
   });
 }
 
+// Inline sign-in, rendered in place on the checkout page — no route change,
+// so a guest never gets bounced away from checkout and back.
+function InlineLogin() {
+  const { loginWithToken } = useAuth();
+  const [step, setStep] = useState("mobile");
+  const [mobile, setMobile] = useState("");
+  const [code, setCode] = useState("");
+  const [demoCode, setDemoCode] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const requestOtp = async (e) => {
+    e.preventDefault();
+    if (!/^\d{10}$/.test(mobile)) { toast.error("Enter valid 10-digit mobile"); return; }
+    setLoading(true);
+    try {
+      const r = await api.post("/auth/otp/request", { mobile });
+      if (r.data.demo_code) setDemoCode(r.data.demo_code);
+      setStep("otp");
+      toast.success("OTP sent");
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Failed to send OTP");
+    } finally { setLoading(false); }
+  };
+
+  const verifyOtp = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const r = await api.post("/auth/otp/verify", { mobile, code });
+      loginWithToken(r.data.token, r.data.user);
+      toast.success("Welcome!");
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Invalid OTP");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="max-w-md">
+      <div className="chip mb-6">Sign in to checkout</div>
+      <h1 className="serif text-4xl leading-tight">Almost there —<br/>just verify your number.</h1>
+      <p className="mt-3 text-sm" style={{ color: "var(--ink-2)" }}>
+        We&apos;ll send you a 6-digit code. Your bag is saved, nothing is lost.
+      </p>
+
+      {step === "mobile" && (
+        <form onSubmit={requestOtp} className="mt-8 space-y-4">
+          <label className="label">Mobile number</label>
+          <div className="flex items-center border rounded-xl px-3" style={{ borderColor: "var(--line)" }}>
+            <Phone size={16} className="opacity-60"/>
+            <span className="ml-2 text-sm" style={{ color: "var(--ink-2)" }}>+91</span>
+            <input
+              data-testid="ck-login-mobile-input"
+              autoFocus
+              inputMode="numeric"
+              maxLength={10}
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
+              placeholder="10-digit mobile"
+              className="flex-1 bg-transparent outline-none py-3 px-3"
+            />
+          </div>
+          <button data-testid="ck-login-send-otp" type="submit" disabled={loading} className="btn-primary w-full justify-center">
+            {loading ? "Sending…" : "Send OTP"}
+          </button>
+        </form>
+      )}
+
+      {step === "otp" && (
+        <form onSubmit={verifyOtp} className="mt-8 space-y-4">
+          <div className="flex items-center gap-2 text-sm" style={{ color: "var(--ink-2)" }}>
+            <ShieldCheck size={16}/> Enter the 6-digit code sent to +91 {mobile}
+          </div>
+          {demoCode && (
+            <div className="text-xs rounded-lg px-3 py-2" style={{ background: "var(--bg-2)", color: "var(--ink-2)" }}>
+              Demo mode — your code is <b data-testid="ck-login-demo-code">{demoCode}</b>
+            </div>
+          )}
+          <input
+            data-testid="ck-login-otp-input"
+            autoFocus
+            inputMode="numeric"
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+            placeholder="——————"
+            className="input text-center serif text-3xl tracking-[0.4em]"
+          />
+          <button data-testid="ck-login-verify-otp" type="submit" disabled={loading || code.length !== 6} className="btn-primary w-full justify-center">
+            {loading ? "Verifying…" : "Verify & Continue"}
+          </button>
+          <button type="button" data-testid="ck-login-change-mobile" onClick={() => setStep("mobile")} className="text-sm underline w-full">
+            Change mobile number
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 export default function Checkout() {
   const { items, subtotal, delivery, total, clear } = useCart();
+  const { user, ready } = useAuth();
   const [addresses, setAddresses] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [method, setMethod] = useState("razorpay");
   const [placing, setPlacing] = useState(false);
+  const [confirmedOrder, setConfirmedOrder] = useState(null);
   const nav = useNavigate();
 
   const [form, setForm] = useState({
@@ -48,10 +150,13 @@ export default function Checkout() {
   };
 
   useEffect(() => {
-    if (items.length === 0) { nav("/shop"); return; }
-    loadAddresses().catch(() => {});
+    if (items.length === 0 && !confirmedOrder) { nav("/shop"); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (user) loadAddresses().catch(() => {});
+  }, [user]);
 
   const saveAddress = async (e) => {
     e.preventDefault();
@@ -82,11 +187,14 @@ export default function Checkout() {
       };
       const r = await api.post("/orders", payload);
       const order = r.data.order;
+      const finishOrder = (successMsg) => {
+        clear();
+        toast.success(successMsg);
+        setConfirmedOrder({ ...order, _items: items, _total: total });
+      };
       if (method === "cod") {
         await api.post(`/orders/${order.id}/cod-confirm`);
-        clear();
-        toast.success("Order placed! You'll pay on delivery.");
-        nav("/orders");
+        finishOrder("Order placed! You'll pay on delivery.");
         return;
       }
       // Razorpay flow
@@ -98,9 +206,7 @@ export default function Checkout() {
           razorpay_payment_id: `pay_mock_${Math.random().toString(36).slice(2, 10)}`,
           razorpay_signature: "mock_signature",
         });
-        clear();
-        toast.success("Payment successful (demo)");
-        nav("/orders");
+        finishOrder("Payment successful (demo)");
         return;
       }
       try {
@@ -129,9 +235,7 @@ export default function Checkout() {
               razorpay_payment_id: resp.razorpay_payment_id,
               razorpay_signature: resp.razorpay_signature,
             });
-            clear();
-            toast.success("Payment successful");
-            nav("/orders");
+            finishOrder("Payment successful");
           } catch (e) {
             toast.error("Payment verification failed");
           }
@@ -144,6 +248,52 @@ export default function Checkout() {
       toast.error(err?.response?.data?.detail || "Failed to place order");
     } finally { setPlacing(false); }
   };
+
+  if (confirmedOrder) {
+    return (
+      <div className="max-w-2xl mx-auto px-6 md:px-10 py-20 text-center fade-in">
+        <CheckCircle2 size={56} style={{ color: "var(--brand)" }} className="mx-auto"/>
+        <div className="label mt-6">Order Confirmed</div>
+        <h1 className="serif text-5xl mt-2">Thank you!</h1>
+        <p className="mt-4 text-lg" style={{ color: "var(--ink-2)" }}>
+          Order <b data-testid="ck-confirmed-order-id">#{confirmedOrder.id.slice(0, 8)}</b> is on its way. We'll deliver your liquid gold soon.
+        </p>
+        <div className="mt-8 border rounded-3xl p-6 text-left" style={{ borderColor: "var(--line)", background: "var(--bg-2)" }}>
+          <div className="space-y-4 max-h-60 overflow-auto">
+            {confirmedOrder._items.map((i) => (
+              <div key={`${i.product_id}-${i.variant_id}`} className="flex gap-3">
+                <img src={i.image_url} alt={i.name} className="w-14 h-16 object-cover rounded-lg bg-white"/>
+                <div className="flex-1 text-sm">
+                  <div className="font-medium">{i.name}</div>
+                  <div style={{ color: "var(--ink-2)" }}>{i.size} · Qty {i.qty}</div>
+                </div>
+                <div className="text-sm font-medium">{inr(i.price * i.qty)}</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 pt-4 border-t flex justify-between text-lg font-semibold" style={{ borderColor: "var(--line)" }}>
+            <span>Total</span><span>{inr(confirmedOrder._total)}</span>
+          </div>
+        </div>
+        <div className="mt-8 flex flex-wrap gap-3 justify-center">
+          <button data-testid="ck-confirmed-view-orders" onClick={() => nav("/orders")} className="btn-primary">View My Orders</button>
+          <button data-testid="ck-confirmed-continue-shopping" onClick={() => nav("/shop")} className="btn-ghost">Continue Shopping</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!ready) {
+    return <div className="max-w-6xl mx-auto px-6 md:px-10 py-24 text-center text-sm" style={{ color: "var(--ink-2)" }}>Loading…</div>;
+  }
+
+  if (!user) {
+    return (
+      <div className="max-w-6xl mx-auto px-6 md:px-10 py-14">
+        <InlineLogin />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-6 md:px-10 py-14">
