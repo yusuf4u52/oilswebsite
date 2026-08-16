@@ -43,7 +43,6 @@ export default function Home() {
               {[
                 { icon: Leaf, t: "100% Natural" },
                 { icon: Droplet, t: "Cold-Pressed" },
-                { icon: ShieldCheck, t: "Lab Tested" },
               ].map(({ icon: Ic, t }) => (
                 <div key={t} className="text-sm flex items-center gap-2">
                   <Ic size={16} style={{ color: "var(--brand)" }} /> {t}
@@ -57,7 +56,6 @@ export default function Home() {
             </div>
             <div className="absolute -bottom-6 -left-6 bg-white border rounded-2xl p-4 shadow-sm hidden sm:block" style={{ borderColor: "var(--line)" }}>
               <div className="label">Free delivery</div>
-              <div className="serif text-lg">on orders above ₹499</div>
             </div>
           </div>
         </div>
