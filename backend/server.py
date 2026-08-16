@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -32,6 +32,7 @@ OTP_MOCK_CODE = os.environ.get('OTP_MOCK_CODE', '123456')
 RAZORPAY_MODE = os.environ.get('RAZORPAY_MODE', 'mock')
 RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
+RAZORPAY_WEBHOOK_SECRET = os.environ.get('RAZORPAY_WEBHOOK_SECRET', '')
 
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
@@ -173,6 +174,7 @@ class OrderStatusUpdate(BaseModel):
 async def startup():
     await db.users.create_index("mobile", unique=True)
     await db.products.create_index("slug", unique=True)
+    await db.orders.create_index("razorpay_order_id")
     # Seed admin (as a doc, mainly for reference; auth uses env)
     await seed_products_if_empty()
     logger.info("Startup complete - Admin: %s", ADMIN_EMAIL)
@@ -454,6 +456,36 @@ async def verify_payment(data: PaymentVerify, user: dict = Depends(get_current_u
         "razorpay_signature": data.razorpay_signature,
         "paid_at": now_iso(),
     }})
+    return {"ok": True}
+
+@api.post("/webhooks/razorpay")
+async def razorpay_webhook(request: Request, x_razorpay_signature: Optional[str] = Header(None)):
+    body = await request.body()
+    if RAZORPAY_WEBHOOK_SECRET:
+        expected = hmac.new(RAZORPAY_WEBHOOK_SECRET.encode(), body, hashlib.sha256).hexdigest()
+        if not x_razorpay_signature or not hmac.compare_digest(expected, x_razorpay_signature):
+            raise HTTPException(status_code=400, detail="Invalid webhook signature")
+    payload = await request.json()
+    event = payload.get("event")
+    entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
+    razorpay_order_id = entity.get("order_id")
+    if not razorpay_order_id:
+        return {"ok": True}
+    if event == "payment.captured":
+        await db.orders.update_one(
+            {"razorpay_order_id": razorpay_order_id, "payment_status": {"$ne": "paid"}},
+            {"$set": {
+                "payment_status": "paid",
+                "status": "confirmed",
+                "razorpay_payment_id": entity.get("id"),
+                "paid_at": now_iso(),
+            }},
+        )
+    elif event == "payment.failed":
+        await db.orders.update_one(
+            {"razorpay_order_id": razorpay_order_id, "payment_status": {"$ne": "paid"}},
+            {"$set": {"payment_status": "failed"}},
+        )
     return {"ok": True}
 
 @api.post("/orders/{order_id}/cod-confirm")
