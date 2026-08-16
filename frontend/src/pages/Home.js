@@ -30,7 +30,7 @@ export default function Home() {
               <span style={{ color: "var(--brand)" }}>the way it should be.</span>
             </h1>
             <p className="mt-6 max-w-lg text-lg" style={{ color: "var(--ink-2)" }}>
-              Wood-pressed groundnut, virgin coconut and Kashmiri almond oils —
+              Wood-pressed groundnut, virgin coconut and best quality almond oils —
               extracted slowly, bottled honestly, delivered to your door.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">

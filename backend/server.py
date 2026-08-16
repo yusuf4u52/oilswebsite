@@ -231,8 +231,8 @@ async def seed_products_if_empty():
             slug="pure-almond-oil",
             name="Pure Sweet Almond Oil",
             category="almond",
-            short_description="Premium cold-pressed sweet almond oil from Kashmiri almonds.",
-            description="Made from sun-ripened Kashmiri almonds, our sweet almond oil is cold-pressed to preserve its light texture and delicate flavour. Packed with vitamin E, omega-3, and antioxidants. Ideal as a finishing oil, in baking, or for skin & hair regimens.",
+            short_description="Premium cold-pressed sweet almond oil from best quality almonds.",
+            description="Made from sun-ripened best quality almonds, our sweet almond oil is cold-pressed to preserve its light texture and delicate flavour. Packed with vitamin E, omega-3, and antioxidants. Ideal as a finishing oil, in baking, or for skin & hair regimens.",
             image_url="",
             gallery=[],
             variants=[
@@ -240,7 +240,7 @@ async def seed_products_if_empty():
                 ProductVariant(size="500ml", price=980, mrp=1200, stock=80),
                 ProductVariant(size="1L", price=1850, mrp=2300, stock=40),
             ],
-            highlights=["Kashmiri Almonds", "Cold-Pressed & Unrefined", "High in Vitamin E", "Culinary & Cosmetic Grade"],
+            highlights=["Best Quality Almonds", "Cold-Pressed & Unrefined", "High in Vitamin E", "Culinary & Cosmetic Grade"],
         ),
         Product(
             slug="filtered-groundnut-oil",
