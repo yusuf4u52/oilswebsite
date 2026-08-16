@@ -1,8 +1,10 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, Request, UploadFile, File, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
+from bson import ObjectId
+from bson.errors import InvalidId
 import os
 import logging
 import uuid
@@ -20,6 +22,9 @@ import bcrypt
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
+
 # --- Config ---
 MONGO_URL = os.environ['MONGO_URL']
 DB_NAME = os.environ['DB_NAME']
@@ -36,6 +41,13 @@ RAZORPAY_WEBHOOK_SECRET = os.environ.get('RAZORPAY_WEBHOOK_SECRET', '')
 
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
+fs_bucket: Optional[AsyncIOMotorGridFSBucket] = None
+
+def get_fs_bucket() -> AsyncIOMotorGridFSBucket:
+    global fs_bucket
+    if fs_bucket is None:
+        fs_bucket = AsyncIOMotorGridFSBucket(db, bucket_name="product_images")
+    return fs_bucket
 
 app = FastAPI(title="Premium Oils API")
 api = APIRouter(prefix="/api")
@@ -172,6 +184,7 @@ class OrderStatusUpdate(BaseModel):
 # --- Startup: seed ---
 @app.on_event("startup")
 async def startup():
+    get_fs_bucket()
     await db.users.create_index("mobile", unique=True)
     await db.products.create_index("slug", unique=True)
     await db.orders.create_index("razorpay_order_id")
@@ -356,6 +369,35 @@ async def update_product(product_id: str, data: ProductCreate, admin: dict = Dep
 async def delete_product(product_id: str, admin: dict = Depends(get_admin)):
     res = await db.products.delete_one({"id": product_id})
     return {"deleted": res.deleted_count}
+
+@api.post("/admin/upload")
+async def upload_image(request: Request, file: UploadFile = File(...), admin: dict = Depends(get_admin)):
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=400, detail="Only JPEG, PNG, WEBP or GIF images are allowed")
+    contents = await file.read()
+    if len(contents) > MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=400, detail="Image must be smaller than 5MB")
+    file_id = await get_fs_bucket().upload_from_stream(
+        file.filename or "upload",
+        contents,
+        metadata={"content_type": file.content_type},
+    )
+    url = f"{str(request.base_url).rstrip('/')}/api/uploads/{file_id}"
+    return {"url": url}
+
+@api.get("/uploads/{file_id}")
+async def get_upload(file_id: str):
+    try:
+        oid = ObjectId(file_id)
+    except InvalidId:
+        raise HTTPException(status_code=404, detail="Image not found")
+    try:
+        stream = await get_fs_bucket().open_download_stream(oid)
+        data = await stream.read()
+    except Exception:
+        raise HTTPException(status_code=404, detail="Image not found")
+    content_type = (stream.metadata or {}).get("content_type", "application/octet-stream")
+    return Response(content=data, media_type=content_type)
 
 # --- Addresses ---
 @api.get("/addresses")

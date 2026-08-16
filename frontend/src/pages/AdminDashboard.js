@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api, { inr } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-import { LogOut, Package, ShoppingBag, IndianRupee, Users, Plus, Trash2, Pencil, X } from "lucide-react";
+import { LogOut, Package, ShoppingBag, IndianRupee, Users, Plus, Trash2, Pencil, X, UploadCloud } from "lucide-react";
 
 const emptyProduct = {
   slug: "", name: "", category: "groundnut",
@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyProduct);
+  const [uploading, setUploading] = useState(false);
   const { logout } = useAuth();
   const nav = useNavigate();
 
@@ -68,6 +69,24 @@ export default function AdminDashboard() {
       load();
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Failed");
+    }
+  };
+
+  const uploadImage = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append("file", file);
+    setUploading(true);
+    try {
+      const res = await api.post("/admin/upload", fd);
+      setForm((f) => ({ ...f, image_url: res.data.url }));
+      toast.success("Image uploaded");
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Upload failed");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
     }
   };
 
@@ -220,7 +239,18 @@ export default function AdminDashboard() {
               <select data-testid="pf-category" className="input" value={form.category} onChange={(e) => setForm({...form, category: e.target.value})}>
                 {["groundnut","coconut","almond","other"].map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              <input data-testid="pf-image" required className="input col-span-2" placeholder="Image URL" value={form.image_url} onChange={(e) => setForm({...form, image_url: e.target.value})}/>
+              <div className="col-span-2 space-y-2">
+                <input data-testid="pf-image" required className="input w-full" placeholder="Image URL" value={form.image_url} onChange={(e) => setForm({...form, image_url: e.target.value})}/>
+                <div className="flex items-center gap-3">
+                  <label className="btn-ghost !py-1.5 !px-3 !rounded-md text-xs cursor-pointer">
+                    <UploadCloud size={12}/> {uploading ? "Uploading..." : "Upload from device"}
+                    <input data-testid="pf-image-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={uploadImage} disabled={uploading}/>
+                  </label>
+                  {form.image_url && (
+                    <img src={form.image_url} alt="Preview" className="h-12 w-12 object-cover rounded-md border" style={{ borderColor: "var(--line)" }}/>
+                  )}
+                </div>
+              </div>
               <input data-testid="pf-short" required className="input col-span-2" placeholder="Short description" value={form.short_description} onChange={(e) => setForm({...form, short_description: e.target.value})}/>
               <textarea data-testid="pf-desc" required className="input col-span-2" rows={3} placeholder="Full description" value={form.description} onChange={(e) => setForm({...form, description: e.target.value})}/>
               <input data-testid="pf-highlights" className="input col-span-2" placeholder="Highlights (comma-separated)" value={(form.highlights || []).join(", ")} onChange={(e) => setForm({...form, highlights: e.target.value.split(",").map((s) => s.trim()).filter(Boolean)})}/>
