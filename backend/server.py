@@ -13,6 +13,7 @@ import hmac
 import hashlib
 import random
 import string
+import requests
 from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -35,6 +36,14 @@ ADMIN_EMAIL = os.environ['ADMIN_EMAIL']
 ADMIN_PASSWORD = os.environ['ADMIN_PASSWORD']
 OTP_MODE = os.environ.get('OTP_MODE', 'mock')
 OTP_MOCK_CODE = os.environ.get('OTP_MOCK_CODE', '123456')
+MSG91_AUTH_KEY = os.environ.get('MSG91_AUTH_KEY', '')
+MSG91_TEMPLATE_ID = os.environ.get('MSG91_TEMPLATE_ID', '')
+ORDER_STATUS_TEMPLATES = {
+    "confirmed": os.environ.get('MSG91_ORDER_CONFIRMED_TEMPLATE_ID', ''),
+    "shipped": os.environ.get('MSG91_ORDER_SHIPPED_TEMPLATE_ID', ''),
+    "delivered": os.environ.get('MSG91_ORDER_DELIVERED_TEMPLATE_ID', ''),
+    "cancelled": os.environ.get('MSG91_ORDER_CANCELLED_TEMPLATE_ID', ''),
+}
 RAZORPAY_MODE = os.environ.get('RAZORPAY_MODE', 'mock')
 RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
@@ -267,6 +276,44 @@ async def seed_products_if_empty():
         await db.products.insert_one(doc)
     logger.info("Seeded %d products", len(products))
 
+# --- MSG91 SMS ---
+def _msg91_send(mobile: str, template_id: str, variables: dict) -> bool:
+    if not MSG91_AUTH_KEY or not template_id:
+        return False
+    try:
+        resp = requests.post(
+            "https://control.msg91.com/api/v5/flow/",
+            headers={"authkey": MSG91_AUTH_KEY, "accept": "application/json", "content-type": "application/json"},
+            json={
+                "template_id": template_id,
+                "short_url": "0",
+                "recipients": [{"mobiles": f"91{mobile}", **variables}],
+            },
+            timeout=10,
+        )
+        body = resp.json()
+        if resp.ok and body.get("type") == "success":
+            return True
+        logger.error("MSG91 send failed: status=%s body=%s", resp.status_code, body)
+        return False
+    except requests.RequestException:
+        logger.exception("MSG91 request failed")
+        return False
+
+def send_otp_sms(mobile: str, code: str) -> bool:
+    if not MSG91_AUTH_KEY or not MSG91_TEMPLATE_ID:
+        logger.error("MSG91_AUTH_KEY / MSG91_TEMPLATE_ID not configured; cannot send OTP SMS")
+        return False
+    return _msg91_send(mobile, MSG91_TEMPLATE_ID, {"OTP": code})
+
+def send_order_status_sms(mobile: str, order_id: str, status: str) -> None:
+    """Best-effort order notification - never blocks or fails the order flow."""
+    template_id = ORDER_STATUS_TEMPLATES.get(status)
+    if not mobile or not template_id:
+        return
+    if not _msg91_send(mobile, template_id, {"ORDER_ID": order_id[:8]}):
+        logger.error("Order status SMS failed: order=%s status=%s mobile=%s", order_id, status, mobile)
+
 # --- Auth: Mobile OTP ---
 @api.post("/auth/otp/request")
 async def request_otp(data: OtpRequest):
@@ -280,7 +327,9 @@ async def request_otp(data: OtpRequest):
                   "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()}},
         upsert=True,
     )
-    # In mock mode we return the code for easy demo; in production we'd send via MSG91
+    if OTP_MODE != "mock" and not send_otp_sms(mobile, code):
+        raise HTTPException(status_code=502, detail="Failed to send OTP. Please try again.")
+    # In mock mode we return the code for easy demo; in live mode it's sent via MSG91
     return {"ok": True, "mode": OTP_MODE, "mobile": mobile,
             "demo_code": code if OTP_MODE == "mock" else None,
             "message": "OTP sent to your mobile"}
@@ -520,13 +569,18 @@ async def verify_payment(data: PaymentVerify, user: dict = Depends(get_current_u
         ok = hmac.compare_digest(expected, data.razorpay_signature)
     if not ok:
         raise HTTPException(status_code=400, detail="Payment signature verification failed")
-    await db.orders.update_one({"id": data.order_id}, {"$set": {
-        "payment_status": "paid",
-        "status": "confirmed",
-        "razorpay_payment_id": data.razorpay_payment_id,
-        "razorpay_signature": data.razorpay_signature,
-        "paid_at": now_iso(),
-    }})
+    result = await db.orders.update_one(
+        {"id": data.order_id, "payment_status": {"$ne": "paid"}},
+        {"$set": {
+            "payment_status": "paid",
+            "status": "confirmed",
+            "razorpay_payment_id": data.razorpay_payment_id,
+            "razorpay_signature": data.razorpay_signature,
+            "paid_at": now_iso(),
+        }},
+    )
+    if result.modified_count:
+        send_order_status_sms(order.get("user_mobile", ""), data.order_id, "confirmed")
     return {"ok": True}
 
 @api.post("/webhooks/razorpay")
@@ -543,7 +597,7 @@ async def razorpay_webhook(request: Request, x_razorpay_signature: Optional[str]
     if not razorpay_order_id:
         return {"ok": True}
     if event == "payment.captured":
-        await db.orders.update_one(
+        updated = await db.orders.find_one_and_update(
             {"razorpay_order_id": razorpay_order_id, "payment_status": {"$ne": "paid"}},
             {"$set": {
                 "payment_status": "paid",
@@ -552,6 +606,8 @@ async def razorpay_webhook(request: Request, x_razorpay_signature: Optional[str]
                 "paid_at": now_iso(),
             }},
         )
+        if updated:
+            send_order_status_sms(updated.get("user_mobile", ""), updated.get("id", ""), "confirmed")
     elif event == "payment.failed":
         await db.orders.update_one(
             {"razorpay_order_id": razorpay_order_id, "payment_status": {"$ne": "paid"}},
@@ -564,7 +620,12 @@ async def cod_confirm(order_id: str, user: dict = Depends(get_current_user)):
     order = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    await db.orders.update_one({"id": order_id}, {"$set": {"status": "confirmed", "payment_status": "cod_pending"}})
+    result = await db.orders.update_one(
+        {"id": order_id, "status": {"$ne": "confirmed"}},
+        {"$set": {"status": "confirmed", "payment_status": "cod_pending"}},
+    )
+    if result.modified_count:
+        send_order_status_sms(order.get("user_mobile", ""), order_id, "confirmed")
     return {"ok": True}
 
 @api.get("/orders")
@@ -590,7 +651,12 @@ async def admin_update_order(order_id: str, data: OrderStatusUpdate, admin: dict
     allowed = {"pending", "confirmed", "shipped", "delivered", "cancelled"}
     if data.status not in allowed:
         raise HTTPException(status_code=400, detail="Invalid status")
-    await db.orders.update_one({"id": order_id}, {"$set": {"status": data.status}})
+    updated = await db.orders.find_one_and_update(
+        {"id": order_id, "status": {"$ne": data.status}},
+        {"$set": {"status": data.status}},
+    )
+    if updated:
+        send_order_status_sms(updated.get("user_mobile", ""), order_id, data.status)
     return {"ok": True}
 
 @api.get("/admin/stats")

@@ -34,13 +34,11 @@ An India-focused D2C ecommerce store for cold-pressed / wood-pressed edible oils
 - Admin: `admin@yourstore.com / Admin@123`
 
 ## Backlog / P1
-- Real MSG91 SMS integration (currently mock)
 - Real Razorpay live keys (currently mock)
 - Product search
 - Coupons / promo codes
 - Wishlist
 - Order tracking with shipping partner
-- Email/SMS notifications on order events
 - Reviews & ratings
 - Multiple product images gallery UX
 
@@ -50,6 +48,12 @@ An India-focused D2C ecommerce store for cold-pressed / wood-pressed edible oils
 - Loyalty points
 - Blog / recipes section
 - WhatsApp support widget
+- Google login — considered 2026-08, explicitly deferred. Decision if revisited: keep as a second independent auth method alongside mobile OTP (not a replacement, not merged by email/mobile match), since delivery/COD still needs a verified phone number.
+- WhatsApp ordering bot (conversational ordering via MSG91/WhatsApp) — considered 2026-08, deferred in favor of SMS-only order status notifications (see Fixes below). Bigger scope: catalog sync, conversational flow, payment handoff.
 
 ## Fixes (2026-01)
 - Fixed cart hydration race in CartContext (lazy-init from localStorage) so /checkout no longer redirects to /shop on refresh with a saved cart.
+
+## Fixes (2026-08)
+- Wired real MSG91 SMS delivery for mobile OTP login. `send_otp_sms()` in `backend/server.py` calls MSG91's Flow API when `OTP_MODE=live`; OTP generation/storage/verification logic is unchanged (still handled locally in `db.otps`), MSG91 is only used to transmit the code. Requires `MSG91_AUTH_KEY` and `MSG91_TEMPLATE_ID` (a DLT-approved Flow template with an `OTP` variable) in `backend/.env`. Left `OTP_MODE=mock` in the live `.env` until real MSG91 credentials are supplied — flipping it without credentials would break login (request endpoint returns 502).
+- Added MSG91 order-status SMS notifications (`send_order_status_sms()` in `backend/server.py`), hooked into all four places an order reaches `confirmed`/`shipped`/`delivered`/`cancelled`: `/orders/verify`, the Razorpay webhook, `/orders/{id}/cod-confirm`, and `/admin/orders/{id}/status`. Unlike OTP send, this is best-effort/non-blocking — a failed SMS never fails the order request — and each status needs its own DLT-approved template id (`MSG91_ORDER_{CONFIRMED,SHIPPED,DELIVERED,CANCELLED}_TEMPLATE_ID` in `backend/.env`, all currently blank so this is a no-op until filled in). Also added idempotency guards (`status: {"$ne": ...}` filters) at each of the four call sites so retried/duplicate calls don't re-send notifications.
