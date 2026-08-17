@@ -2,6 +2,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, Request,
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -187,7 +188,10 @@ async def startup():
     get_fs_bucket()
     await db.users.create_index("mobile", unique=True)
     await db.products.create_index("slug", unique=True)
+    await db.products.create_index("category")
     await db.orders.create_index("razorpay_order_id")
+    await db.orders.create_index("user_id")
+    await db.addresses.create_index("user_id")
     # Seed admin (as a doc, mainly for reference; auth uses env)
     await seed_products_if_empty()
     logger.info("Startup complete - Admin: %s", ADMIN_EMAIL)
@@ -397,7 +401,11 @@ async def get_upload(file_id: str):
     except Exception:
         raise HTTPException(status_code=404, detail="Image not found")
     content_type = (stream.metadata or {}).get("content_type", "application/octet-stream")
-    return Response(content=data, media_type=content_type)
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+    )
 
 # --- Addresses ---
 @api.get("/addresses")
@@ -606,6 +614,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

@@ -38,7 +38,7 @@ export default function Home() {
             return (
               <Link data-testid={`bestseller-${p.slug}`} to={`/product/${p.slug}`} key={p.id} className="product-tile block">
                 <div className="aspect-square rounded-xl overflow-hidden bg-white">
-                  <img src={p.image_url} alt={p.name} className="w-full h-full object-cover"/>
+                  <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" decoding="async"/>
                 </div>
                 <div className="mt-4">
                   <div className="label" style={{ color: "var(--amber)" }}>{p.category}</div>
@@ -83,7 +83,7 @@ export default function Home() {
           </div>
           <div className="md:col-span-5 relative">
             <div className="relative rounded-[2rem] overflow-hidden aspect-[4/5] grain" style={{ background: "var(--bg-2)" }}>
-              <img src={HERO_IMG} alt="Pouring pure oil" className="w-full h-full object-cover"/>
+              <img src={HERO_IMG} alt="Pouring pure oil" className="w-full h-full object-cover" fetchpriority="high"/>
             </div>
             <div className="absolute -bottom-6 -left-6 bg-white border rounded-2xl p-4 shadow-sm hidden sm:block" style={{ borderColor: "var(--line)" }}>
               <div className="label">Free delivery</div>
@@ -105,7 +105,7 @@ export default function Home() {
           {CATS.map((c) => (
             <Link data-testid={`cat-card-${c.key}`} to={`/shop?category=${c.key}`} key={c.key} className="product-tile block">
               <div className="aspect-[4/3] rounded-2xl overflow-hidden">
-                <img src={c.img} alt={c.label} className="w-full h-full object-cover"/>
+                <img src={c.img} alt={c.label} className="w-full h-full object-cover" loading="lazy" decoding="async"/>
               </div>
               <div className="mt-5 flex items-center justify-between">
                 <div className="serif text-2xl">{c.label} Oil</div>
@@ -120,7 +120,7 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-6 md:px-10 mt-24">
         <div className="grid md:grid-cols-12 gap-10 items-center">
           <div className="md:col-span-5 rounded-[2rem] overflow-hidden aspect-square">
-            <img src={KITCHEN_IMG} alt="Indian kitchen" className="w-full h-full object-cover"/>
+            <img src={KITCHEN_IMG} alt="Indian kitchen" className="w-full h-full object-cover" loading="lazy" decoding="async"/>
           </div>
           <div className="md:col-span-7">
             <div className="chip"><Sparkles size={12} className="mr-2"/> Our Promise</div>

@@ -46,7 +46,7 @@ export default function ProductDetail() {
             <div className="grid grid-cols-4 gap-3 mt-4">
               {p.gallery.map((g, idx) => (
                 <div key={idx} className="aspect-square rounded-xl overflow-hidden" style={{ background: "var(--bg-2)" }}>
-                  <img src={g} alt="" className="w-full h-full object-cover"/>
+                  <img src={g} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async"/>
                 </div>
               ))}
             </div>

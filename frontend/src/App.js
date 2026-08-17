@@ -1,20 +1,21 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { CartProvider, useCart } from "@/context/CartContext";
 import Home from "@/pages/Home";
-import Shop from "@/pages/Shop";
-import ProductDetail from "@/pages/ProductDetail";
-import Login from "@/pages/Login";
-import Checkout from "@/pages/Checkout";
-import Orders from "@/pages/Orders";
-import Profile from "@/pages/Profile";
-import AdminLogin from "@/pages/AdminLogin";
-import AdminDashboard from "@/pages/AdminDashboard";
 import CartDrawer from "@/components/CartDrawer";
 import { ShoppingBag, User, Package, MapPin, LogOut, ChevronDown } from "lucide-react";
 import "@/App.css";
+
+const Shop = lazy(() => import("@/pages/Shop"));
+const ProductDetail = lazy(() => import("@/pages/ProductDetail"));
+const Login = lazy(() => import("@/pages/Login"));
+const Checkout = lazy(() => import("@/pages/Checkout"));
+const Orders = lazy(() => import("@/pages/Orders"));
+const Profile = lazy(() => import("@/pages/Profile"));
+const AdminLogin = lazy(() => import("@/pages/AdminLogin"));
+const AdminDashboard = lazy(() => import("@/pages/AdminDashboard"));
 
 function UserMenu() {
   const { user, logout } = useAuth();
@@ -188,17 +189,19 @@ function App() {
         <BrowserRouter>
           <div className="App">
             <Header />
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/shop" element={<Shop />} />
-              <Route path="/product/:slug" element={<ProductDetail />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
-              <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
-            </Routes>
+            <Suspense fallback={null}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/shop" element={<Shop />} />
+                <Route path="/product/:slug" element={<ProductDetail />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
+                <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
+              </Routes>
+            </Suspense>
             <CartDrawer />
             <Footer />
           </div>
