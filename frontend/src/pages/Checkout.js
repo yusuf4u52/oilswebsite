@@ -227,6 +227,11 @@ export default function Checkout() {
           contact: order.address.mobile,
         },
         theme: { color: "#1B4332" },
+        modal: {
+          ondismiss: () => {
+            toast.error("Payment cancelled");
+          },
+        },
         handler: async (resp) => {
           try {
             await api.post("/orders/verify", {
@@ -243,6 +248,9 @@ export default function Checkout() {
       };
       // eslint-disable-next-line no-undef
       const rz = new window.Razorpay(options);
+      rz.on("payment.failed", (resp) => {
+        toast.error(resp?.error?.description || "Payment failed. Please try again.");
+      });
       rz.open();
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Failed to place order");

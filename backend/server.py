@@ -456,18 +456,30 @@ async def create_order(data: OrderCreate, user: dict = Depends(get_current_user)
     if not address:
         raise HTTPException(status_code=400, detail="Address not found")
     subtotal, delivery, total = compute_totals(data.items)
+    amount_paise = int(round(total * 100))
+    if data.payment_method == "razorpay" and amount_paise < 100:
+        raise HTTPException(status_code=400, detail="Order amount must be at least ₹1 for online payment")
     order_id = new_id()
     razorpay_order_id = None
     if data.payment_method == "razorpay":
         if RAZORPAY_MODE == "live" and RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET:
             import razorpay
+            from razorpay.errors import BadRequestError
             rz = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
-            rz_order = rz.order.create({
-                "amount": int(total * 100),
-                "currency": "INR",
-                "receipt": order_id[:40],
-                "payment_capture": 1,
-            })
+            try:
+                rz_order = rz.order.create({
+                    "amount": amount_paise,
+                    "currency": "INR",
+                    "receipt": order_id[:40],
+                    "payment_capture": 1,
+                })
+            except BadRequestError as e:
+                msg = str(e)
+                if "auth" in msg.lower() or "key" in msg.lower():
+                    raise HTTPException(status_code=401, detail="Razorpay authentication failed")
+                raise HTTPException(status_code=500, detail=f"Razorpay order creation failed: {msg}")
+            except Exception:
+                raise HTTPException(status_code=500, detail="Razorpay order creation failed")
             razorpay_order_id = rz_order["id"]
         else:
             # Mock razorpay order id
