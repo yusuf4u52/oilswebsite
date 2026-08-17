@@ -217,8 +217,6 @@ export default function Checkout() {
       }
       const options = {
         key: r.data.razorpay_key_id,
-        amount: Math.round(order.total * 100),
-        currency: "INR",
         name: "Premium Oils",
         description: "Order Payment",
         order_id: order.razorpay_order_id,
