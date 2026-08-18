@@ -168,6 +168,14 @@ function Footer() {
   );
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 function RequireAuth({ children }) {
   const { user, ready } = useAuth();
   const loc = useLocation();
@@ -191,6 +199,7 @@ function App() {
       <CartProvider>
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <div className="App">
+            <ScrollToTop />
             <Header />
             <Suspense fallback={null}>
               <Routes>
