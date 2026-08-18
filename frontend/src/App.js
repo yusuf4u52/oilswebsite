@@ -152,8 +152,8 @@ function Footer() {
         <div>
           <div className="label mb-3">Support</div>
           <ul className="space-y-2 text-sm" style={{ color: "var(--ink-2)" }}>
-            <li>+91 8407986619</li>
-            <li>care@premiumoils.in</li>
+            <li><a href="tel:+918407986619" className="hover:opacity-70">+91 8407986619</a></li>
+            <li><a href="mailto:care@premiumoils.in" className="hover:opacity-70">support@premiumoils.in</a></li>
             <li>Mon–Sat, 9am–7pm</li>
           </ul>
         </div>
