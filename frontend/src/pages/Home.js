@@ -59,7 +59,7 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-6 md:px-10 pt-6 pb-24">
         <div className="grid md:grid-cols-12 gap-10 items-center">
           <div className="md:col-span-7 fade-in">
-            <div className="chip">Cold-pressed · Small batch · India</div>
+            <div className="chip">Kachi Ghani · Cold-pressed · Small batch · India</div>
             <h2 className="serif mt-6 text-5xl sm:text-6xl lg:text-7xl leading-[1.02] tracking-tight">
               Liquid gold,<br/>
               <span style={{ color: "var(--brand)" }}>the way it should be.</span>

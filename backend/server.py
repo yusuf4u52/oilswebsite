@@ -225,8 +225,8 @@ async def seed_products_if_empty():
             slug="cold-pressed-groundnut-oil",
             name="Cold-Pressed Groundnut Oil",
             category="groundnut",
-            short_description="Traditional wood-pressed groundnut oil, unrefined & unfiltered.",
-            description="Our cold-pressed groundnut oil is extracted from hand-picked, sun-dried peanuts using a traditional wooden ghani (kachi ghani). Rich in monounsaturated fats, vitamin E, and a natural nutty aroma. Perfect for everyday Indian cooking, tempering, and deep frying.",
+            short_description="Traditional Kachi Ghani wood-pressed groundnut oil, unrefined & unfiltered.",
+            description="Our cold-pressed groundnut oil is extracted from hand-picked, sun-dried peanuts using a traditional wooden ghani — Kachi Ghani, also spelled kacchi ghani or kachhi ghani (कच्ची घानी). This shuddh मूंगफली का तेल (groundnut oil) is rich in monounsaturated fats, vitamin E, and a natural nutty aroma. Perfect for everyday Indian cooking, tempering, and deep frying.",
             image_url="",
             gallery=[],
             variants=[
@@ -234,14 +234,14 @@ async def seed_products_if_empty():
                 ProductVariant(size="1L", price=520, mrp=650, stock=100),
                 ProductVariant(size="5L", price=2450, mrp=3100, stock=50),
             ],
-            highlights=["100% Pure & Natural", "Wood-Pressed Kachi Ghani", "No Chemicals or Preservatives", "Rich in Vitamin E"],
+            highlights=["100% Pure & Natural", "Kachi Ghani Wood-Pressed", "No Chemicals or Preservatives", "Rich in Vitamin E"],
         ),
         Product(
             slug="virgin-coconut-oil",
             name="Virgin Coconut Oil",
             category="coconut",
             short_description="Pure virgin coconut oil, cold-pressed from fresh Kerala coconuts.",
-            description="Cold-pressed from fresh, hand-selected coconuts sourced directly from Kerala farms. This unrefined virgin coconut oil retains its natural aroma, MCTs, and lauric acid — ideal for cooking, hair care, and skin nourishment.",
+            description="Cold-pressed from fresh, hand-selected coconuts sourced directly from Kerala farms. This unrefined virgin नारियल तेल (coconut oil) retains its natural aroma, MCTs, and lauric acid — ideal for cooking, hair care, and skin nourishment.",
             image_url="",
             gallery=[],
             variants=[
@@ -256,7 +256,7 @@ async def seed_products_if_empty():
             name="Pure Sweet Almond Oil",
             category="almond",
             short_description="Premium cold-pressed sweet almond oil from best quality almonds.",
-            description="Made from sun-ripened best quality almonds, our sweet almond oil is cold-pressed to preserve its light texture and delicate flavour. Packed with vitamin E, omega-3, and antioxidants. Ideal as a finishing oil, in baking, or for skin & hair regimens.",
+            description="Made from sun-ripened best quality almonds, our sweet बादाम तेल (almond oil) is cold-pressed to preserve its light texture and delicate flavour. Packed with vitamin E, omega-3, and antioxidants. Ideal as a finishing oil, in baking, or for skin & hair regimens.",
             image_url="",
             gallery=[],
             variants=[
@@ -271,7 +271,7 @@ async def seed_products_if_empty():
             name="Filtered Groundnut Oil (Family Pack)",
             category="groundnut",
             short_description="Everyday filtered groundnut oil — light, mildly flavoured, high smoke point.",
-            description="Our filtered groundnut oil offers a lighter alternative to kachi ghani — mildly flavoured and with a high smoke point, perfect for daily Indian cooking and frying. Lab-tested for purity.",
+            description="Our filtered groundnut oil offers a lighter alternative to Kachi Ghani (kacchi ghani) — mildly flavoured and with a high smoke point, perfect for daily Indian cooking and frying. Lab-tested for purity.",
             image_url="",
             gallery=[],
             variants=[

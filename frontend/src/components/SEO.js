@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet-async";
-import { SITE_NAME, SITE_URL, DEFAULT_TITLE, DEFAULT_DESCRIPTION, DEFAULT_OG_IMAGE } from "@/constants/seo";
+import { SITE_NAME, SITE_URL, DEFAULT_TITLE, DEFAULT_DESCRIPTION, DEFAULT_OG_IMAGE, DEFAULT_KEYWORDS } from "@/constants/seo";
 
-export default function SEO({ title, description, path = "/", image, jsonLd, noindex = false }) {
+export default function SEO({ title, description, path = "/", image, jsonLd, keywords, noindex = false }) {
   const fullTitle = title ? `${title} | ${SITE_NAME}` : DEFAULT_TITLE;
   const desc = description || DEFAULT_DESCRIPTION;
   const url = `${SITE_URL}${path === "/" ? "" : path}`;
@@ -12,6 +12,7 @@ export default function SEO({ title, description, path = "/", image, jsonLd, noi
     <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={desc} />
+      <meta name="keywords" content={keywords || DEFAULT_KEYWORDS} />
       <link rel="canonical" href={url} />
       {noindex && <meta name="robots" content="noindex, nofollow" />}
 

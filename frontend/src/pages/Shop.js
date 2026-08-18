@@ -12,20 +12,24 @@ const CATS = [
 
 const CAT_SEO = {
   all: {
-    title: "Shop Cold-Pressed Oils Online",
-    description: "Shop our full range of cold-pressed groundnut, coconut and almond oils. 100% natural, wood-pressed and delivered fresh across India.",
+    title: "Shop Kachi Ghani Cold-Pressed Oils Online",
+    description: "Shop our full range of Kachi Ghani (kacchi ghani) wood-pressed groundnut, coconut and almond oils. 100% natural, shuddh, and delivered fresh across India.",
+    keywords: "kachi ghani, kacchi ghani, kachhi ghani, कच्ची घानी तेल, cold pressed oil online, wood pressed oil, groundnut oil, coconut oil, almond oil, buy oil online India",
   },
   groundnut: {
-    title: "Buy Wood-Pressed Groundnut Oil Online",
-    description: "Wood-pressed groundnut oil, extracted slowly at low RPM to preserve nutrients and flavour. Bottled within 48 hours, delivered fresh across India.",
+    title: "Buy Kachi Ghani Groundnut Oil Online",
+    description: "Wood-pressed Kachi Ghani groundnut oil — also spelled kacchi ghani or kachhi ghani (कच्ची घानी) — extracted slowly at low RPM to preserve nutrients and flavour. Bottled within 48 hours, delivered fresh across India.",
+    keywords: "kachi ghani groundnut oil, kacchi ghani groundnut oil, kachhi ghani, kacha ghani, कच्ची घानी तेल, मूंगफली का तेल, wood pressed groundnut oil, cold pressed groundnut oil, lakdi ghani oil, buy groundnut oil online India",
   },
   coconut: {
     title: "Buy Virgin Coconut Oil Online",
-    description: "Cold-pressed virgin coconut oil, unrefined and honest. Extracted the traditional way and delivered fresh across India.",
+    description: "Cold-pressed virgin coconut oil (नारियल तेल), unrefined and honest. Extracted the traditional way and delivered fresh across India.",
+    keywords: "virgin coconut oil, cold pressed coconut oil, नारियल तेल, kachi ghani coconut oil, buy coconut oil online India",
   },
   almond: {
     title: "Buy Cold-Pressed Almond Oil Online",
-    description: "Cold-pressed almond oil, 100% natural with no refining and no shortcuts. Bottled fresh and delivered across India.",
+    description: "Cold-pressed almond oil (बादाम तेल), 100% natural with no refining and no shortcuts. Bottled fresh and delivered across India.",
+    keywords: "cold pressed almond oil, बादाम तेल, almond oil online India, shuddh badam tel",
   },
 };
 
@@ -46,7 +50,7 @@ export default function Shop() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 md:px-10 py-14">
-      <SEO title={seo.title} description={seo.description} path="/shop" />
+      <SEO title={seo.title} description={seo.description} keywords={seo.keywords} path="/shop" />
       <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
           <div className="label">Shop</div>
