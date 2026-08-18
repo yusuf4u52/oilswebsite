@@ -70,7 +70,7 @@ export default function ProductDetail() {
                     className={`text-left px-4 py-3 rounded-2xl border transition-colors ${active ? "border-[#1B4332] bg-[#1B4332]/5" : ""}`}
                     style={{ borderColor: active ? "var(--brand)" : "var(--line)" }}
                   >
-                    <div className="serif text-xl">{v.size}</div>
+                    <div className="text-xl font-medium">{v.size}</div>
                     <div className="text-sm mt-1">{inr(v.price)}</div>
                     {v.mrp > v.price && <div className="text-xs line-through" style={{ color: "var(--ink-2)" }}>{inr(v.mrp)}</div>}
                   </button>
