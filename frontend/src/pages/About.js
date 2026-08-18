@@ -1,8 +1,14 @@
 import { Leaf, Droplet, ShieldCheck } from "lucide-react";
+import SEO from "@/components/SEO";
 
 export default function About() {
   return (
     <div className="max-w-7xl mx-auto px-6 md:px-10 py-16">
+      <SEO
+        title="About Us"
+        description="Premium Oils works directly with small farmers and traditional wood-pressed ghanis across India to bring back cold-pressed, unrefined, honest oil."
+        path="/about"
+      />
       <div className="label">About Us</div>
       <h1 className="serif text-4xl sm:text-5xl mt-2 max-w-2xl">
         Liquid gold, the way it should be.

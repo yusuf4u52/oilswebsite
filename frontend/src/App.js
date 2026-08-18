@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { CartProvider, useCart } from "@/context/CartContext";
@@ -195,34 +196,36 @@ function RequireAdmin({ children }) {
 
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <div className="App">
-            <ScrollToTop />
-            <Header />
-            <Suspense fallback={null}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/shop" element={<Shop />} />
-                <Route path="/product/:slug" element={<ProductDetail />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
-                <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
-                <Route path="/admin/login" element={<AdminLogin />} />
-                <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
-              </Routes>
-            </Suspense>
-            <CartDrawer />
-            <Footer />
-          </div>
-          <Toaster position="top-right" richColors />
-        </BrowserRouter>
-      </CartProvider>
-    </AuthProvider>
+    <HelmetProvider>
+      <AuthProvider>
+        <CartProvider>
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <div className="App">
+              <ScrollToTop />
+              <Header />
+              <Suspense fallback={null}>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/shop" element={<Shop />} />
+                  <Route path="/product/:slug" element={<ProductDetail />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
+                  <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+                  <Route path="/admin/login" element={<AdminLogin />} />
+                  <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
+                </Routes>
+              </Suspense>
+              <CartDrawer />
+              <Footer />
+            </div>
+            <Toaster position="top-right" richColors />
+          </BrowserRouter>
+        </CartProvider>
+      </AuthProvider>
+    </HelmetProvider>
   );
 }
 

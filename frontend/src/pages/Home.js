@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api, { inr } from "@/lib/api";
 import { ArrowRight, Leaf, Droplet } from "lucide-react";
+import SEO from "@/components/SEO";
 
 const HERO_VIDEO = "/media/hero.mp4";
 const HERO_POSTER = "/media/hero-poster.jpg";
@@ -22,6 +23,7 @@ export default function Home() {
 
   return (
     <div>
+      <SEO path="/" />
       {/* SHOP NOW — products, first thing on the page */}
       <section className="max-w-7xl mx-auto px-6 md:px-10 pt-10 pb-16">
         <div className="flex items-end justify-between mb-8">

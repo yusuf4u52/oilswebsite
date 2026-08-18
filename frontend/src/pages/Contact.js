@@ -1,8 +1,14 @@
 import { Phone, Mail, Clock } from "lucide-react";
+import SEO from "@/components/SEO";
 
 export default function Contact() {
   return (
     <div className="max-w-7xl mx-auto px-6 md:px-10 py-16">
+      <SEO
+        title="Contact Us"
+        description="Get in touch with Premium Oils for questions about an order, a product, or anything else — by phone, email, or during business hours."
+        path="/contact"
+      />
       <div className="label">Contact</div>
       <h1 className="serif text-4xl sm:text-5xl mt-2 max-w-2xl">
         We'd love to hear from you.

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import api, { inr } from "@/lib/api";
+import SEO from "@/components/SEO";
 
 const CATS = [
   { key: "all", label: "All Oils" },
@@ -8,6 +9,25 @@ const CATS = [
   { key: "coconut", label: "Coconut" },
   { key: "almond", label: "Almond" },
 ];
+
+const CAT_SEO = {
+  all: {
+    title: "Shop Cold-Pressed Oils Online",
+    description: "Shop our full range of cold-pressed groundnut, coconut and almond oils. 100% natural, wood-pressed and delivered fresh across India.",
+  },
+  groundnut: {
+    title: "Buy Wood-Pressed Groundnut Oil Online",
+    description: "Wood-pressed groundnut oil, extracted slowly at low RPM to preserve nutrients and flavour. Bottled within 48 hours, delivered fresh across India.",
+  },
+  coconut: {
+    title: "Buy Virgin Coconut Oil Online",
+    description: "Cold-pressed virgin coconut oil, unrefined and honest. Extracted the traditional way and delivered fresh across India.",
+  },
+  almond: {
+    title: "Buy Cold-Pressed Almond Oil Online",
+    description: "Cold-pressed almond oil, 100% natural with no refining and no shortcuts. Bottled fresh and delivered across India.",
+  },
+};
 
 export default function Shop() {
   const [params, setParams] = useSearchParams();
@@ -22,8 +42,11 @@ export default function Shop() {
       .finally(() => setLoading(false));
   }, [cat]);
 
+  const seo = CAT_SEO[cat] || CAT_SEO.all;
+
   return (
     <div className="max-w-7xl mx-auto px-6 md:px-10 py-14">
+      <SEO title={seo.title} description={seo.description} path="/shop" />
       <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
           <div className="label">Shop</div>
