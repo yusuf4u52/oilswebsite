@@ -166,7 +166,13 @@ export default function AdminDashboard() {
                 {orders.length === 0 && (
                   <tr><td colSpan={7} className="py-10 text-center" style={{ color: "var(--ink-2)" }}>No orders yet.</td></tr>
                 )}
-                {orders.map((o) => (
+                {orders.map((o) => {
+                  const isUnpaid = o.payment_method === "razorpay" && o.payment_status !== "paid";
+                  const paymentColors = { paid: "#1B7A43", cod_pending: "#B7791F", failed: "#C0392B" };
+                  const statusOptions = isUnpaid
+                    ? ["pending", "cancelled"]
+                    : ["pending", "confirmed", "shipped", "delivered", "cancelled"];
+                  return (
                   <tr key={o.id} className="border-t" style={{ borderColor: "var(--line)" }} data-testid={`admin-order-${o.id}`}>
                     <td className="py-3">
                       <div className="font-mono text-xs">{o.id.slice(0, 8)}</div>
@@ -180,7 +186,9 @@ export default function AdminDashboard() {
                     <td className="font-medium">{inr(o.total)}</td>
                     <td className="text-xs">
                       <div>{o.payment_method}</div>
-                      <div style={{ color: "var(--ink-2)" }}>{o.payment_status}</div>
+                      <div style={{ color: paymentColors[o.payment_status] || "var(--ink-2)", fontWeight: isUnpaid ? 600 : 400 }}>
+                        {isUnpaid ? "unpaid" : o.payment_status}
+                      </div>
                     </td>
                     <td>
                       <select
@@ -189,12 +197,13 @@ export default function AdminDashboard() {
                         onChange={(e) => changeStatus(o.id, e.target.value)}
                         className="input !py-1 !px-2 text-xs"
                       >
-                        {["pending","confirmed","shipped","delivered","cancelled"].map((s) => <option key={s}>{s}</option>)}
+                        {statusOptions.map((s) => <option key={s}>{s}</option>)}
                       </select>
                     </td>
                     <td></td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

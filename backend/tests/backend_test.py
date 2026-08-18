@@ -256,6 +256,22 @@ class TestOrders:
         r = s.get(f"{API}/admin/orders", headers=auth(user_token))
         assert r.status_code == 403
 
+    def test_admin_cannot_fulfill_unpaid_order(self, s, admin_token, user_token, addr_id):
+        item = self._item(s, qty=1, price=520)
+        r = s.post(f"{API}/orders", json={
+            "items": [item], "address_id": addr_id, "payment_method": "razorpay",
+        }, headers=auth(user_token))
+        assert r.status_code == 200, r.text
+        order = r.json()["order"]
+        assert order["payment_status"] == "pending"
+        r = s.put(f"{API}/admin/orders/{order['id']}/status", json={"status": "confirmed"}, headers=auth(admin_token))
+        assert r.status_code == 400
+        r = s.put(f"{API}/admin/orders/{order['id']}/status", json={"status": "shipped"}, headers=auth(admin_token))
+        assert r.status_code == 400
+        # cancelling an unpaid order is still allowed
+        r = s.put(f"{API}/admin/orders/{order['id']}/status", json={"status": "cancelled"}, headers=auth(admin_token))
+        assert r.status_code == 200
+
 
 # -------- Admin Product CRUD --------
 class TestAdminProducts:

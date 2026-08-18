@@ -646,6 +646,11 @@ async def admin_update_order(order_id: str, data: OrderStatusUpdate, admin: dict
     allowed = {"pending", "confirmed", "shipped", "delivered", "cancelled"}
     if data.status not in allowed:
         raise HTTPException(status_code=400, detail="Invalid status")
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if data.status in {"confirmed", "shipped", "delivered"} and order.get("payment_status") not in {"paid", "cod_pending"}:
+        raise HTTPException(status_code=400, detail="Cannot set this status until payment is completed")
     updated = await db.orders.find_one_and_update(
         {"id": order_id, "status": {"$ne": data.status}},
         {"$set": {"status": data.status}},
