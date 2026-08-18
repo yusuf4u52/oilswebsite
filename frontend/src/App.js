@@ -16,6 +16,8 @@ const Orders = lazy(() => import("@/pages/Orders"));
 const Profile = lazy(() => import("@/pages/Profile"));
 const AdminLogin = lazy(() => import("@/pages/AdminLogin"));
 const AdminDashboard = lazy(() => import("@/pages/AdminDashboard"));
+const About = lazy(() => import("@/pages/About"));
+const Contact = lazy(() => import("@/pages/Contact"));
 
 function UserMenu() {
   const { user, logout } = useAuth();
@@ -137,23 +139,24 @@ function Footer() {
         </div>
         <div>
           <div className="label mb-3">Shop</div>
-          <ul className="space-y-2 text-sm">
-            <li><Link to="/shop?category=groundnut">Groundnut Oil</Link></li>
-            <li><Link to="/shop?category=coconut">Coconut Oil</Link></li>
-            <li><Link to="/shop?category=almond">Almond Oil</Link></li>
+          <ul className="space-y-2 text-sm" style={{ color: "var(--ink-2)" }}>
+            <li><Link to="/shop?category=groundnut" className="underline underline-offset-4 hover:opacity-70">Groundnut Oil</Link></li>
+            <li><Link to="/shop?category=coconut" className="underline underline-offset-4 hover:opacity-70">Coconut Oil</Link></li>
+            <li><Link to="/shop?category=almond" className="underline underline-offset-4 hover:opacity-70">Almond Oil</Link></li>
           </ul>
         </div>
         <div>
           <div className="label mb-3">Company</div>
           <ul className="space-y-2 text-sm" style={{ color: "var(--ink-2)" }}>
-            <li>About</li><li>Sourcing</li><li>Contact</li>
+            <li><Link to="/about" className="underline underline-offset-4 hover:opacity-70">About</Link></li>
+            <li><Link to="/contact" className="underline underline-offset-4 hover:opacity-70">Contact</Link></li>
           </ul>
         </div>
         <div>
           <div className="label mb-3">Support</div>
           <ul className="space-y-2 text-sm" style={{ color: "var(--ink-2)" }}>
-            <li><a href="tel:+918407986619" className="hover:opacity-70">+91 8407986619</a></li>
-            <li><a href="mailto:care@premiumoils.in" className="hover:opacity-70">support@premiumoils.in</a></li>
+            <li><a href="tel:+918407986619" className="underline underline-offset-4 hover:opacity-70">+91 8407986619</a></li>
+            <li><a href="mailto:support@premiumoils.in" className="underline underline-offset-4 hover:opacity-70">support@premiumoils.in</a></li>
             <li>Mon–Sat, 9am–7pm</li>
           </ul>
         </div>
@@ -196,6 +199,8 @@ function App() {
                 <Route path="/product/:slug" element={<ProductDetail />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/checkout" element={<Checkout />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
                 <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
                 <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
                 <Route path="/admin/login" element={<AdminLogin />} />
