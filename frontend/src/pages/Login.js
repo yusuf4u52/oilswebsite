@@ -16,9 +16,6 @@ export default function Login() {
       <div className="mt-10">
         <AuthGate onDone={() => nav(next)} />
       </div>
-      <div className="text-xs text-center pt-6" style={{ color: "var(--ink-2)" }}>
-        Or <Link to="/admin/login" data-testid="login-admin-link" className="underline">sign in as admin</Link>
-      </div>
     </div>
   );
 }
