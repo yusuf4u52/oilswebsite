@@ -13,6 +13,9 @@ import hmac
 import hashlib
 import json
 import requests
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -49,6 +52,12 @@ RAZORPAY_MODE = os.environ.get('RAZORPAY_MODE', 'mock')
 RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
 RAZORPAY_WEBHOOK_SECRET = os.environ.get('RAZORPAY_WEBHOOK_SECRET', '')
+EMAIL_MODE = os.environ.get('EMAIL_MODE', 'mock')
+SMTP_HOST = os.environ.get('SMTP_HOST', '')
+SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
+SMTP_USER = os.environ.get('SMTP_USER', '')
+SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
+EMAIL_FROM = os.environ.get('EMAIL_FROM', '')
 
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
@@ -310,6 +319,105 @@ def send_order_status_sms(mobile: str, order_id: str, status: str) -> None:
     if not _msg91_send(mobile, template_id, {"ORDER_ID": order_id[:8]}):
         logger.error("Order status SMS failed: order=%s status=%s mobile=%s", order_id, status, mobile)
 
+# --- Email (SMTP) ---
+def _send_email(to_email: str, subject: str, html_body: str) -> bool:
+    if not to_email:
+        return False
+    if EMAIL_MODE != "live":
+        # Mock mode (no real SMTP configured yet): log instead of sending, so local
+        # dev/tests can exercise this flow without hitting a real mail server. See
+        # EMAIL_MODE in env_config_conventions.
+        logger.info("Email (mock): to=%s subject=%s", to_email, subject)
+        return True
+    if not (SMTP_HOST and SMTP_USER and SMTP_PASSWORD and EMAIL_FROM):
+        logger.error("Email send skipped - SMTP not configured: to=%s subject=%s", to_email, subject)
+        return False
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = EMAIL_FROM
+        msg["To"] = to_email
+        msg.attach(MIMEText(html_body, "html"))
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(EMAIL_FROM, [to_email], msg.as_string())
+        return True
+    except Exception:
+        logger.exception("SMTP send failed: to=%s subject=%s", to_email, subject)
+        return False
+
+ORDER_STATUS_EMAIL_SUBJECTS = {
+    "confirmed": "Your Premium Oils order is confirmed",
+    "shipped": "Your Premium Oils order has shipped",
+    "delivered": "Your Premium Oils order has been delivered",
+    "cancelled": "Your Premium Oils order has been cancelled",
+}
+
+def _order_items_html(order: dict) -> str:
+    rows = "".join(
+        f"<tr><td style='padding:4px 8px;'>{i.get('name','')} ({i.get('size','')}) x{i.get('qty',0)}</td>"
+        f"<td style='padding:4px 8px;text-align:right;'>₹{i.get('price', 0) * i.get('qty', 0):.2f}</td></tr>"
+        for i in order.get("items", [])
+    )
+    return f"<table style='width:100%;border-collapse:collapse;'>{rows}</table>"
+
+def send_order_confirmation_email(order: dict) -> None:
+    """Best-effort receipt email to the customer - never blocks or fails the order flow."""
+    to = order.get("user_email", "")
+    if not to:
+        return
+    order_id = order.get("id", "")
+    subject = ORDER_STATUS_EMAIL_SUBJECTS["confirmed"]
+    body = (
+        "<div style='font-family:sans-serif;max-width:520px;margin:auto;'>"
+        "<h2>Thank you for your order!</h2>"
+        f"<p>Order <strong>#{order_id[:8]}</strong> is confirmed.</p>"
+        f"{_order_items_html(order)}"
+        f"<p style='text-align:right;font-weight:bold;'>Total: ₹{order.get('total', 0):.2f}</p>"
+        "<p>We'll email you again once your order ships.</p>"
+        "</div>"
+    )
+    if not _send_email(to, subject, body):
+        logger.error("Order confirmation email failed: order=%s email=%s", order_id, to)
+
+def send_order_status_email(order: dict, status: str) -> None:
+    """Best-effort status-update email to the customer - never blocks or fails the order flow."""
+    to = order.get("user_email", "")
+    subject = ORDER_STATUS_EMAIL_SUBJECTS.get(status)
+    if not to or not subject:
+        return
+    order_id = order.get("id", "")
+    body = (
+        "<div style='font-family:sans-serif;max-width:520px;margin:auto;'>"
+        f"<h2>{subject}</h2>"
+        f"<p>Order <strong>#{order_id[:8]}</strong> status: <strong>{status.capitalize()}</strong></p>"
+        f"{_order_items_html(order)}"
+        "</div>"
+    )
+    if not _send_email(to, subject, body):
+        logger.error("Order status email failed: order=%s status=%s email=%s", order_id, status, to)
+
+def send_admin_new_order_email(order: dict) -> None:
+    """Best-effort new-order alert to the store admin - never blocks or fails the order flow."""
+    if not ADMIN_EMAIL:
+        return
+    order_id = order.get("id", "")
+    address = order.get("address", {})
+    subject = f"New order #{order_id[:8]} - ₹{order.get('total', 0):.2f}"
+    body = (
+        "<div style='font-family:sans-serif;max-width:520px;margin:auto;'>"
+        "<h2>New order received</h2>"
+        f"<p>Order <strong>#{order_id[:8]}</strong> &mdash; {order.get('payment_method', '')}</p>"
+        f"{_order_items_html(order)}"
+        f"<p style='text-align:right;font-weight:bold;'>Total: ₹{order.get('total', 0):.2f}</p>"
+        f"<p>Ship to: {address.get('name','')}, {address.get('line1','')}, "
+        f"{address.get('city','')} {address.get('pincode','')}</p>"
+        "</div>"
+    )
+    if not _send_email(ADMIN_EMAIL, subject, body):
+        logger.error("Admin new-order email failed: order=%s", order_id)
+
 # --- Auth: Google Sign-In ---
 @api.post("/auth/google")
 async def google_login(data: GoogleAuthRequest):
@@ -532,6 +640,7 @@ async def create_order(data: OrderCreate, user: dict = Depends(get_current_user)
         "id": order_id,
         "user_id": user["id"],
         "user_mobile": user.get("mobile", ""),
+        "user_email": user.get("email", ""),
         "items": [i.model_dump() for i in data.items],
         "address": address,
         "payment_method": data.payment_method,
@@ -576,6 +685,8 @@ async def verify_payment(data: PaymentVerify, user: dict = Depends(get_current_u
     )
     if result.modified_count:
         send_order_status_sms(order.get("user_mobile", ""), data.order_id, "confirmed")
+        send_order_confirmation_email(order)
+        send_admin_new_order_email(order)
     return {"ok": True}
 
 @api.post("/webhooks/razorpay")
@@ -603,6 +714,8 @@ async def razorpay_webhook(request: Request, x_razorpay_signature: Optional[str]
         )
         if updated:
             send_order_status_sms(updated.get("user_mobile", ""), updated.get("id", ""), "confirmed")
+            send_order_confirmation_email(updated)
+            send_admin_new_order_email(updated)
     elif event == "payment.failed":
         await db.orders.update_one(
             {"razorpay_order_id": razorpay_order_id, "payment_status": {"$ne": "paid"}},
@@ -621,6 +734,8 @@ async def cod_confirm(order_id: str, user: dict = Depends(get_current_user)):
     )
     if result.modified_count:
         send_order_status_sms(order.get("user_mobile", ""), order_id, "confirmed")
+        send_order_confirmation_email(order)
+        send_admin_new_order_email(order)
     return {"ok": True}
 
 @api.get("/orders")
@@ -657,6 +772,11 @@ async def admin_update_order(order_id: str, data: OrderStatusUpdate, admin: dict
     )
     if updated:
         send_order_status_sms(updated.get("user_mobile", ""), order_id, data.status)
+        if data.status == "confirmed":
+            send_order_confirmation_email(updated)
+            send_admin_new_order_email(updated)
+        else:
+            send_order_status_email(updated, data.status)
     return {"ok": True}
 
 @api.get("/admin/stats")

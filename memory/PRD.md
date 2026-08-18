@@ -9,6 +9,7 @@ An India-focused D2C ecommerce store for cold-pressed / wood-pressed edible oils
 - DB: MongoDB (`oils_store`)
 - Auth: Google Sign-In + JWT (mock Google mode by default; real mode needs a Google Cloud OAuth client ID), plus mobile number collected post-login for delivery/order-status SMS
 - Payments: Razorpay (mock mode; live keys pluggable via env)
+- Notifications: MSG91 SMS + SMTP email, both order-status-triggered (mock mode by default; live keys pluggable via env)
 
 ## User Personas
 1. **Home cook (Priya, 32)** — buys 1L/5L groundnut oil monthly, values purity.
@@ -35,6 +36,8 @@ An India-focused D2C ecommerce store for cold-pressed / wood-pressed edible oils
 
 ## Backlog / P1
 - Real Razorpay live keys (currently mock)
+- Real SMTP credentials for order emails (currently `EMAIL_MODE=mock`, logs instead of sending)
+- Real MSG91 auth key + order-status DLT templates (currently blank, SMS is a no-op)
 - Product search
 - Coupons / promo codes
 - Wishlist
@@ -53,6 +56,9 @@ An India-focused D2C ecommerce store for cold-pressed / wood-pressed edible oils
 
 ## Fixes (2026-01)
 - Fixed cart hydration race in CartContext (lazy-init from localStorage) so /checkout no longer redirects to /shop on refresh with a saved cart.
+
+## Fixes (2026-08-18, later)
+- Added SMTP email integration (`backend/server.py`): `_send_email()` sends via `smtplib`, gated by `EMAIL_MODE=mock|live` (same convention as Google/Razorpay/MSG91). Wired into the same order-status trigger points as the existing MSG91 SMS (`/orders/verify`, the Razorpay webhook, `/orders/{id}/cod-confirm`, `/admin/orders/{id}/status`): customers get an order-confirmation email when payment is confirmed/COD-confirmed and status-update emails for shipped/delivered/cancelled; the admin (`ADMIN_EMAIL`) gets a new-order alert email at the same confirmation points. All best-effort/non-blocking like the SMS sends — a failed email never fails the order request. Orders now also store `user_email` (alongside the existing `user_mobile`) captured at creation time. `EMAIL_MODE=mock` and blank `SMTP_*`/`EMAIL_FROM` in `backend/.env`/`backend/.env.example` by default — mock mode just logs the email. All 25 backend tests pass.
 
 ## Fixes (2026-08)
 - Wired real MSG91 SMS delivery for mobile OTP login (`send_otp_sms()`). **Superseded 2026-08-18** — see below; OTP login was removed.
