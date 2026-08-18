@@ -2,6 +2,11 @@
 // plus one <url> per product fetched from the backend API (best-effort —
 // falls back to static-only routes if the API is unreachable, e.g. in CI
 // without a live backend).
+//
+// Also injects Product/Offer JSON-LD for the live catalog into a marker
+// block in public/index.html, so non-JS crawlers (most AI assistant bots
+// don't execute JavaScript) see real product/price data from the static
+// HTML alone, not just from the React app.
 const fs = require("fs");
 const path = require("path");
 
@@ -31,6 +36,54 @@ async function fetchProducts() {
   }
 }
 
+function productJsonLd(p) {
+  return {
+    "@type": "Product",
+    name: p.name,
+    description: p.short_description,
+    image: [p.image_url, ...(p.gallery || [])].filter(Boolean),
+    sku: p.id,
+    brand: { "@type": "Brand", name: "Premium Oils" },
+    offers: (p.variants || []).map((v) => ({
+      "@type": "Offer",
+      name: `${p.name} — ${v.size}`,
+      price: v.price,
+      priceCurrency: "INR",
+      availability: v.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      url: `${SITE_URL}/product/${p.slug}`,
+    })),
+  };
+}
+
+function injectProductsJsonLd(products) {
+  const htmlPath = path.join(__dirname, "..", "public", "index.html");
+  const html = fs.readFileSync(htmlPath, "utf8");
+  const startMarker = "<!-- PRODUCTS_JSONLD:START -->";
+  const endMarker = "<!-- PRODUCTS_JSONLD:END -->";
+  const startIdx = html.indexOf(startMarker);
+  const endIdx = html.indexOf(endMarker);
+  if (startIdx === -1 || endIdx === -1) {
+    console.warn("PRODUCTS_JSONLD markers not found in index.html; skipping JSON-LD injection");
+    return;
+  }
+
+  const graph = {
+    "@context": "https://schema.org",
+    "@graph": products.map(productJsonLd),
+  };
+  const block =
+    `${startMarker}\n` +
+    `        <!-- Generated at build time by scripts/generate-sitemap.js from live product\n` +
+    `             data, so non-JS crawlers (most AI assistant bots included) see real\n` +
+    `             product/price data without executing the React app. -->\n` +
+    `        <script type="application/ld+json">\n${JSON.stringify(graph, null, 2)}\n        </script>\n` +
+    `        ${endMarker}`;
+
+  const newHtml = html.slice(0, startIdx) + block + html.slice(endIdx + endMarker.length);
+  fs.writeFileSync(htmlPath, newHtml);
+  console.log(`index.html updated with JSON-LD for ${products.length} products`);
+}
+
 async function main() {
   const products = await fetchProducts();
   const entries = [
@@ -45,6 +98,12 @@ async function main() {
   const outPath = path.join(__dirname, "..", "public", "sitemap.xml");
   fs.writeFileSync(outPath, xml);
   console.log(`sitemap.xml written with ${entries.length} URLs (${products.length} products)`);
+
+  if (products.length > 0) {
+    injectProductsJsonLd(products);
+  } else {
+    console.log("No products fetched; leaving existing index.html JSON-LD block untouched");
+  }
 }
 
 main();
