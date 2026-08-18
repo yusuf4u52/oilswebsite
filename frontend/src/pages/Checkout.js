@@ -5,7 +5,7 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import AuthGate from "@/components/AuthGate";
 import { toast } from "sonner";
-import { Plus, MapPin, CreditCard, Truck, CheckCircle2 } from "lucide-react";
+import { Plus, Minus, Trash2, MapPin, CreditCard, Truck, CheckCircle2 } from "lucide-react";
 
 const RAZORPAY_SRC = "https://checkout.razorpay.com/v1/checkout.js";
 
@@ -45,7 +45,7 @@ function InlineLogin() {
 }
 
 export default function Checkout() {
-  const { items, subtotal, delivery, total, clear } = useCart();
+  const { items, subtotal, delivery, total, clear, updateQty, removeItem } = useCart();
   const { user, ready } = useAuth();
   const isCustomer = !!user && user.role !== "admin" && !!user.mobile;
   const [addresses, setAddresses] = useState([]);
@@ -322,7 +322,17 @@ export default function Checkout() {
                   <img src={i.image_url} alt={i.name} className="w-14 h-16 object-cover rounded-lg bg-white"/>
                   <div className="flex-1 text-sm">
                     <div className="font-medium">{i.name}</div>
-                    <div style={{ color: "var(--ink-2)" }}>{i.size} · Qty {i.qty}</div>
+                    <div style={{ color: "var(--ink-2)" }}>{i.size}</div>
+                    <div className="mt-2 flex items-center gap-3">
+                      <div className="flex items-center gap-2 border rounded-full px-2 py-0.5" style={{ borderColor: "var(--line)" }}>
+                        <button data-testid={`ck-dec-${i.variant_id}`} onClick={() => updateQty(i.product_id, i.variant_id, Math.max(0, i.qty - 1))}><Minus size={12}/></button>
+                        <span className="text-xs min-w-[14px] text-center">{i.qty}</span>
+                        <button data-testid={`ck-inc-${i.variant_id}`} onClick={() => updateQty(i.product_id, i.variant_id, i.qty + 1)}><Plus size={12}/></button>
+                      </div>
+                      <button data-testid={`ck-remove-${i.variant_id}`} onClick={() => removeItem(i.product_id, i.variant_id)} className="opacity-60 hover:opacity-100">
+                        <Trash2 size={14}/>
+                      </button>
+                    </div>
                   </div>
                   <div className="text-sm font-medium">{inr(i.price * i.qty)}</div>
                 </div>
