@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { inr } from "@/lib/utils";
 import { getProducts } from "@/lib/server-api";
 import { pageMetadata } from "@/lib/metadata";
@@ -84,8 +85,8 @@ export default async function Shop({ searchParams }) {
           const mrp = Math.min(...p.variants.map((v) => v.mrp));
           return (
             <Link data-testid={`product-card-${p.slug}`} href={`/product/${p.slug}`} key={p.id} className="product-tile block">
-              <div className="aspect-square rounded-xl overflow-hidden bg-white">
-                <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" decoding="async"/>
+              <div className="relative aspect-square rounded-xl overflow-hidden bg-white">
+                <Image src={p.image_url} alt={p.name} fill className="object-cover" sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"/>
               </div>
               <div className="mt-5">
                 <div className="label" style={{ color: "var(--amber)" }}>{p.category}</div>

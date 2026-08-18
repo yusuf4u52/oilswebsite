@@ -2,8 +2,8 @@
 
 import axios from "axios";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-export const API = `${BACKEND_URL}/api`;
+// Same-origin now that the API routes live in this app - no separate backend URL needed.
+export const API = "/api";
 
 const api = axios.create({ baseURL: API });
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import api from "@/lib/api";
 import { inr } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
@@ -68,7 +69,7 @@ function OrderSummaryItems({ items, updateQty, removeItem }) {
     <div className="space-y-4 max-h-72 overflow-auto">
       {items.map((i) => (
         <div key={`${i.product_id}-${i.variant_id}`} className="flex gap-3">
-          <img src={i.image_url} alt={i.name} className="w-14 h-16 object-cover rounded-lg bg-white"/>
+          <Image src={i.image_url} alt={i.name} width={56} height={64} className="w-14 h-16 object-cover rounded-lg bg-white"/>
           <div className="flex-1 text-sm">
             <div className="font-medium">{i.name}</div>
             <div style={{ color: "var(--ink-2)" }}>{i.size}</div>
@@ -124,8 +125,8 @@ export default function CheckoutView() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch once customer is known
     if (isCustomer) loadAddresses().catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCustomer]);
 
   const saveAddress = async (e) => {
@@ -238,13 +239,13 @@ export default function CheckoutView() {
         <div className="label mt-6">Order Confirmed</div>
         <h1 className="serif text-5xl mt-2">Thank you!</h1>
         <p className="mt-4 text-lg" style={{ color: "var(--ink-2)" }}>
-          Order <b data-testid="ck-confirmed-order-id">#{confirmedOrder.id.slice(0, 8)}</b> is on its way. We'll deliver your liquid gold soon.
+          Order <b data-testid="ck-confirmed-order-id">#{confirmedOrder.id.slice(0, 8)}</b> is on its way. We&apos;ll deliver your liquid gold soon.
         </p>
         <div className="mt-8 border rounded-3xl p-6 text-left" style={{ borderColor: "var(--line)", background: "var(--bg-2)" }}>
           <div className="space-y-4 max-h-60 overflow-auto">
             {confirmedOrder._items.map((i) => (
               <div key={`${i.product_id}-${i.variant_id}`} className="flex gap-3">
-                <img src={i.image_url} alt={i.name} className="w-14 h-16 object-cover rounded-lg bg-white"/>
+                <Image src={i.image_url} alt={i.name} width={56} height={64} className="w-14 h-16 object-cover rounded-lg bg-white"/>
                 <div className="flex-1 text-sm">
                   <div className="font-medium">{i.name}</div>
                   <div style={{ color: "var(--ink-2)" }}>{i.size} · Qty {i.qty}</div>

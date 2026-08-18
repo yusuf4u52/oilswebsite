@@ -20,7 +20,7 @@ export default function About() {
       <p className="mt-6 text-lg max-w-2xl" style={{ color: "var(--ink-2)" }}>
         Premium Oils started with a simple frustration: it had become almost
         impossible to buy oil the way our grandmothers did — cold-pressed,
-        unrefined, and honest about what's inside the bottle. So we set out
+        unrefined, and honest about what&apos;s inside the bottle. So we set out
         to bring that back, working directly with small farmers and traditional
         wood-pressed ghanis across India.
       </p>
@@ -31,7 +31,7 @@ export default function About() {
       </p>
       <p className="mt-4 text-lg max-w-2xl" style={{ color: "var(--ink-2)" }}>
         This traditional method goes by many names — Kachi Ghani, kacchi ghani,
-        kachhi ghani, or simply <span lang="hi">कच्ची घानी</span> — but it's
+        kachhi ghani, or simply <span lang="hi">कच्ची घानी</span> — but it&apos;s
         always the same slow, unheated wooden or stone press our
         grandparents trusted. No shortcuts, just <span lang="hi">शुद्ध</span>{" "}
         (shuddh) oil the way it was always meant to be made.

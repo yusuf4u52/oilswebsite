@@ -16,12 +16,12 @@
 html, body {
     background: var(--bg);
     color: var(--ink);
-    font-family: 'Outfit', system-ui, sans-serif;
+    font-family: var(--font-outfit), system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     margin: 0;
 }
 
-.serif { font-family: 'Cormorant Garamond', serif; letter-spacing: -0.01em; }
+.serif { font-family: var(--font-cormorant), serif; letter-spacing: -0.01em; }
 
 .label {
     font-size: 0.72rem;
@@ -67,7 +67,7 @@ html, body {
     padding: 0.85rem 1rem;
     border-radius: 0.75rem;
     color: var(--ink);
-    font-family: 'Outfit', sans-serif;
+    font-family: var(--font-outfit), sans-serif;
     outline: none;
     transition: border-color 180ms ease, box-shadow 180ms ease;
 }

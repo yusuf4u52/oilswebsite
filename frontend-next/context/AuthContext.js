@@ -11,6 +11,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing auth state from localStorage on mount
     if (!token) { setReady(true); return; }
     api.get("/auth/me")
       .then((r) => setUser(r.data.user))

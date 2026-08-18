@@ -16,6 +16,7 @@ export function CartProvider({ children }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrating cart from localStorage on mount
       if (raw) setItems(JSON.parse(raw));
     } catch (e) {
       // ignore malformed cart data

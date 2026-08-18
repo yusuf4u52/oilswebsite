@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import api from "@/lib/api";
 import { inr } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -45,8 +46,8 @@ export default function AdminDashboardView() {
 
   useEffect(() => {
     if (!authorized) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch once authorized
     load().catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authorized]);
 
   if (!authorized) return null;
@@ -262,7 +263,7 @@ export default function AdminDashboardView() {
             <div className="grid md:grid-cols-2 gap-4">
               {products.map((p) => (
                 <div key={p.id} data-testid={`admin-product-${p.slug}`} className="border rounded-md p-5 flex gap-4" style={{ borderColor: "var(--line)" }}>
-                  <img src={p.image_url} alt={p.name} className="w-24 h-28 object-cover rounded-md"/>
+                  <Image src={p.image_url} alt={p.name} width={96} height={112} className="w-24 h-28 object-cover rounded-md"/>
                   <div className="flex-1">
                     <div className="label" style={{ color: "var(--amber)" }}>{p.category}</div>
                     <div className="serif text-xl mt-1">{p.name}</div>
@@ -303,7 +304,7 @@ export default function AdminDashboardView() {
                   <input data-testid="pf-image-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={uploadImage} disabled={uploading}/>
                 </label>
                 {form.image_url && (
-                  <img src={form.image_url} alt="Preview" className="h-12 w-12 object-cover rounded-md border" style={{ borderColor: "var(--line)" }}/>
+                  <Image src={form.image_url} alt="Preview" width={48} height={48} className="h-12 w-12 object-cover rounded-md border" style={{ borderColor: "var(--line)" }}/>
                 )}
               </div>
               <input data-testid="pf-short" required className="input col-span-2" placeholder="Short description" value={form.short_description} onChange={(e) => setForm({...form, short_description: e.target.value})}/>

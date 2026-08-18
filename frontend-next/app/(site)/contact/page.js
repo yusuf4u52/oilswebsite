@@ -14,11 +14,11 @@ export default function Contact() {
     <div className="max-w-7xl mx-auto px-6 md:px-10 py-16">
       <div className="label">Contact</div>
       <h1 className="serif text-4xl sm:text-5xl mt-2 max-w-2xl">
-        We'd love to hear from you.
+        We&apos;d love to hear from you.
       </h1>
       <p className="mt-6 text-lg max-w-2xl" style={{ color: "var(--ink-2)" }}>
         Questions about an order, a product, or anything else? Reach us
-        through any of the channels below and we'll get back to you.
+        through any of the channels below and we&apos;ll get back to you.
       </p>
       <div className="mt-10 grid sm:grid-cols-3 gap-4 max-w-2xl">
         <a href="tel:+918407986619" className="border rounded-2xl p-5 flex items-center gap-3 hover:opacity-70" style={{ borderColor: "var(--line)" }}>
