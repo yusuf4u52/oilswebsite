@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import api, { inr } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
+import AuthGate from "@/components/AuthGate";
 import { toast } from "sonner";
-import { Plus, MapPin, CreditCard, Truck, Phone, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Plus, MapPin, CreditCard, Truck, CheckCircle2 } from "lucide-react";
 
 const RAZORPAY_SRC = "https://checkout.razorpay.com/v1/checkout.js";
 
@@ -29,98 +30,16 @@ function loadRazorpayScript() {
 // Inline sign-in, rendered in place on the checkout page — no route change,
 // so a guest never gets bounced away from checkout and back.
 function InlineLogin() {
-  const { loginWithToken } = useAuth();
-  const [step, setStep] = useState("mobile");
-  const [mobile, setMobile] = useState("");
-  const [code, setCode] = useState("");
-  const [demoCode, setDemoCode] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const requestOtp = async (e) => {
-    e.preventDefault();
-    if (!/^\d{10}$/.test(mobile)) { toast.error("Enter valid 10-digit mobile"); return; }
-    setLoading(true);
-    try {
-      const r = await api.post("/auth/otp/request", { mobile });
-      if (r.data.demo_code) setDemoCode(r.data.demo_code);
-      setStep("otp");
-      toast.success("OTP sent");
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || "Failed to send OTP");
-    } finally { setLoading(false); }
-  };
-
-  const verifyOtp = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const r = await api.post("/auth/otp/verify", { mobile, code });
-      loginWithToken(r.data.token, r.data.user);
-      toast.success("Welcome!");
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || "Invalid OTP");
-    } finally { setLoading(false); }
-  };
-
   return (
     <div className="max-w-md">
       <div className="chip mb-6">Sign in to checkout</div>
-      <h1 className="serif text-4xl leading-tight">Almost there —<br/>just verify your number.</h1>
+      <h1 className="serif text-4xl leading-tight">Almost there —<br/>sign in to continue.</h1>
       <p className="mt-3 text-sm" style={{ color: "var(--ink-2)" }}>
-        We&apos;ll send you a 6-digit code. Your bag is saved, nothing is lost.
+        Continue with Google. Your bag is saved, nothing is lost.
       </p>
-
-      {step === "mobile" && (
-        <form onSubmit={requestOtp} className="mt-8 space-y-4">
-          <label className="label">Mobile number</label>
-          <div className="flex items-center border rounded-xl px-3" style={{ borderColor: "var(--line)" }}>
-            <Phone size={16} className="opacity-60"/>
-            <span className="ml-2 text-sm" style={{ color: "var(--ink-2)" }}>+91</span>
-            <input
-              data-testid="ck-login-mobile-input"
-              autoFocus
-              inputMode="numeric"
-              maxLength={10}
-              value={mobile}
-              onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
-              placeholder="10-digit mobile"
-              className="flex-1 bg-transparent outline-none py-3 px-3"
-            />
-          </div>
-          <button data-testid="ck-login-send-otp" type="submit" disabled={loading} className="btn-primary w-full justify-center">
-            {loading ? "Sending…" : "Send OTP"}
-          </button>
-        </form>
-      )}
-
-      {step === "otp" && (
-        <form onSubmit={verifyOtp} className="mt-8 space-y-4">
-          <div className="flex items-center gap-2 text-sm" style={{ color: "var(--ink-2)" }}>
-            <ShieldCheck size={16}/> Enter the 6-digit code sent to +91 {mobile}
-          </div>
-          {demoCode && (
-            <div className="text-xs rounded-lg px-3 py-2" style={{ background: "var(--bg-2)", color: "var(--ink-2)" }}>
-              Demo mode — your code is <b data-testid="ck-login-demo-code">{demoCode}</b>
-            </div>
-          )}
-          <input
-            data-testid="ck-login-otp-input"
-            autoFocus
-            inputMode="numeric"
-            maxLength={6}
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            placeholder="——————"
-            className="input text-center serif text-3xl tracking-[0.4em]"
-          />
-          <button data-testid="ck-login-verify-otp" type="submit" disabled={loading || code.length !== 6} className="btn-primary w-full justify-center">
-            {loading ? "Verifying…" : "Verify & Continue"}
-          </button>
-          <button type="button" data-testid="ck-login-change-mobile" onClick={() => setStep("mobile")} className="text-sm underline w-full">
-            Change mobile number
-          </button>
-        </form>
-      )}
+      <div className="mt-8">
+        <AuthGate />
+      </div>
     </div>
   );
 }
@@ -128,6 +47,7 @@ function InlineLogin() {
 export default function Checkout() {
   const { items, subtotal, delivery, total, clear } = useCart();
   const { user, ready } = useAuth();
+  const isCustomer = !!user && user.role !== "admin" && !!user.mobile;
   const [addresses, setAddresses] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -155,8 +75,9 @@ export default function Checkout() {
   }, []);
 
   useEffect(() => {
-    if (user) loadAddresses().catch(() => {});
-  }, [user]);
+    if (isCustomer) loadAddresses().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCustomer]);
 
   const saveAddress = async (e) => {
     e.preventDefault();
@@ -293,7 +214,7 @@ export default function Checkout() {
     return <div className="max-w-6xl mx-auto px-6 md:px-10 py-24 text-center text-sm" style={{ color: "var(--ink-2)" }}>Loading…</div>;
   }
 
-  if (!user) {
+  if (!isCustomer) {
     return (
       <div className="max-w-6xl mx-auto px-6 md:px-10 py-14">
         <InlineLogin />

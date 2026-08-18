@@ -28,12 +28,13 @@ export default function Profile() {
   const setTab = (t) => setParams(t === "details" ? {} : { tab: t });
 
   // details
-  const [form, setForm] = useState({ name: "", email: "" });
+  const [form, setForm] = useState({ name: "", email: "", mobile: "" });
   const [saving, setSaving] = useState(false);
-  useEffect(() => { if (user) setForm({ name: user.name || "", email: user.email || "" }); }, [user]);
+  useEffect(() => { if (user) setForm({ name: user.name || "", email: user.email || "", mobile: user.mobile || "" }); }, [user]);
 
   const saveDetails = async (e) => {
     e.preventDefault();
+    if (!/^\d{10}$/.test(form.mobile)) return toast.error("Enter a valid 10-digit mobile");
     setSaving(true);
     try {
       const r = await api.put("/auth/me", form);
@@ -136,9 +137,18 @@ export default function Profile() {
         <form onSubmit={saveDetails} className="mt-10 max-w-md space-y-5">
           <div>
             <label className="label">Mobile number</label>
-            <div className="flex items-center border rounded-xl px-3 mt-2" style={{ borderColor: "var(--line)", background: "var(--bg-2)" }}>
+            <div className="flex items-center border rounded-xl px-3 mt-2" style={{ borderColor: "var(--line)" }}>
               <Phone size={16} className="opacity-60"/>
-              <span data-testid="profile-mobile" className="flex-1 py-3 px-3 text-sm">+91 {user?.mobile}</span>
+              <span className="ml-2 text-sm" style={{ color: "var(--ink-2)" }}>+91</span>
+              <input
+                data-testid="profile-mobile"
+                inputMode="numeric"
+                maxLength={10}
+                className="flex-1 bg-transparent outline-none py-3 px-3"
+                placeholder="10-digit mobile"
+                value={form.mobile}
+                onChange={(e) => setForm({ ...form, mobile: e.target.value.replace(/\D/g, "") })}
+              />
             </div>
           </div>
           <div>

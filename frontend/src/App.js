@@ -101,7 +101,7 @@ function Header() {
           <Link data-testid="nav-shop-almond" to="/shop?category=almond" className="hover:opacity-70">Almond</Link>
         </nav>
         <div className="flex items-center gap-3">
-          {user ? (
+          {user && user.role !== "admin" ? (
             <UserMenu />
           ) : (
             <button data-testid="nav-login" onClick={() => nav("/login")} className="btn-ghost !py-2 !px-3">
@@ -169,7 +169,7 @@ function RequireAuth({ children }) {
   const { user, ready } = useAuth();
   const loc = useLocation();
   if (!ready) return null;
-  if (!user) {
+  if (!user || user.role === "admin") {
     return <Navigate to={`/login?next=${encodeURIComponent(loc.pathname + loc.search)}`} replace />;
   }
   return children;

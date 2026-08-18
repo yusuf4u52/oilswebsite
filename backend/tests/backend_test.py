@@ -1,4 +1,5 @@
-"""Backend tests for Premium Oils API - covers products, auth (OTP+admin), addresses, orders (razorpay mock + cod), admin CRUD."""
+"""Backend tests for Premium Oils API - covers products, auth (Google mock+admin), addresses, orders (razorpay mock + cod), admin CRUD."""
+import json
 import os
 import random
 import pytest
@@ -14,16 +15,14 @@ def s():
 
 
 @pytest.fixture(scope="session")
-def mobile():
-    return "98765" + str(random.randint(10000, 99999))
+def google_email():
+    return f"test.user.{random.randint(10000, 99999)}@example.com"
 
 
 @pytest.fixture(scope="session")
-def user_token(s, mobile):
-    r = s.post(f"{API}/auth/otp/request", json={"mobile": mobile})
-    assert r.status_code == 200, r.text
-    assert r.json().get("demo_code") == "123456"
-    r = s.post(f"{API}/auth/otp/verify", json={"mobile": mobile, "code": "123456"})
+def user_token(s, google_email):
+    credential = json.dumps({"sub": google_email, "email": google_email, "name": "Test User"})
+    r = s.post(f"{API}/auth/google", json={"credential": credential})
     assert r.status_code == 200, r.text
     return r.json()["token"]
 
@@ -77,35 +76,33 @@ class TestHealthAndProducts:
         assert r.status_code == 404
 
 
-# -------- OTP flow --------
-class TestOtp:
-    def test_otp_invalid_mobile_short(self, s):
-        r = s.post(f"{API}/auth/otp/request", json={"mobile": "12345"})
+# -------- Google Sign-In (mock mode) --------
+class TestGoogleAuth:
+    def test_invalid_credential_json(self, s):
+        r = s.post(f"{API}/auth/google", json={"credential": "not-json"})
         assert r.status_code == 400
 
-    def test_otp_invalid_mobile_non_numeric(self, s):
-        r = s.post(f"{API}/auth/otp/request", json={"mobile": "abcdefghij"})
+    def test_credential_missing_identity(self, s):
+        r = s.post(f"{API}/auth/google", json={"credential": json.dumps({"name": "No Id"})})
         assert r.status_code == 400
 
-    def test_otp_request_mock_returns_code(self, s):
-        r = s.post(f"{API}/auth/otp/request", json={"mobile": "9000000001"})
-        assert r.status_code == 200
-        d = r.json()
-        assert d["ok"] is True
-        assert d["demo_code"] == "123456"
-
-    def test_otp_verify_wrong_code(self, s):
-        s.post(f"{API}/auth/otp/request", json={"mobile": "9000000002"})
-        r = s.post(f"{API}/auth/otp/verify", json={"mobile": "9000000002", "code": "000000"})
-        assert r.status_code == 400
-
-    def test_otp_verify_success_returns_token(self, s):
-        s.post(f"{API}/auth/otp/request", json={"mobile": "9000000003"})
-        r = s.post(f"{API}/auth/otp/verify", json={"mobile": "9000000003", "code": "123456"})
-        assert r.status_code == 200
+    def test_new_user_needs_mobile(self, s):
+        email = f"needs.mobile.{random.randint(10000, 99999)}@example.com"
+        credential = json.dumps({"sub": email, "email": email, "name": "New User"})
+        r = s.post(f"{API}/auth/google", json={"credential": credential})
+        assert r.status_code == 200, r.text
         j = r.json()
         assert "token" in j and "user" in j
-        assert j["user"]["mobile"] == "9000000003"
+        assert j["user"]["email"] == email
+        assert j["needs_mobile"] is True
+
+    def test_same_google_id_returns_same_account(self, s):
+        email = f"repeat.login.{random.randint(10000, 99999)}@example.com"
+        credential = json.dumps({"sub": email, "email": email, "name": "Repeat User"})
+        r1 = s.post(f"{API}/auth/google", json={"credential": credential})
+        r2 = s.post(f"{API}/auth/google", json={"credential": credential})
+        assert r1.status_code == 200 and r2.status_code == 200
+        assert r1.json()["user"]["id"] == r2.json()["user"]["id"]
 
 
 # -------- Admin login --------
@@ -124,16 +121,28 @@ class TestMe:
         r = s.get(f"{API}/auth/me")
         assert r.status_code in (401, 403)
 
-    def test_me_user(self, s, user_token):
+    def test_me_user(self, s, user_token, google_email):
         r = s.get(f"{API}/auth/me", headers=auth(user_token))
         assert r.status_code == 200
         u = r.json()["user"]
-        assert "mobile" in u
+        assert u["email"] == google_email
 
     def test_me_admin(self, s, admin_token):
         r = s.get(f"{API}/auth/me", headers=auth(admin_token))
         assert r.status_code == 200
         assert r.json()["user"]["role"] == "admin"
+
+    def test_update_mobile_invalid(self, s, user_token):
+        r = s.put(f"{API}/auth/me", json={"mobile": "123"}, headers=auth(user_token))
+        assert r.status_code == 400
+
+    def test_update_mobile_success(self, s, user_token):
+        mobile = "97" + str(random.randint(10000000, 99999999))
+        r = s.put(f"{API}/auth/me", json={"mobile": mobile}, headers=auth(user_token))
+        assert r.status_code == 200, r.text
+        assert r.json()["user"]["mobile"] == mobile
+        r = s.get(f"{API}/auth/me", headers=auth(user_token))
+        assert r.json()["user"]["mobile"] == mobile
 
 
 # -------- Addresses --------

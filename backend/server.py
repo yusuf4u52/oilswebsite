@@ -11,8 +11,7 @@ import logging
 import uuid
 import hmac
 import hashlib
-import random
-import string
+import json
 import requests
 from pathlib import Path
 from pydantic import BaseModel, Field
@@ -20,6 +19,9 @@ from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 import jwt
 import bcrypt
+from pymongo.errors import DuplicateKeyError
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_auth_transport
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -34,10 +36,9 @@ JWT_SECRET = os.environ['JWT_SECRET']
 JWT_ALG = os.environ.get('JWT_ALGORITHM', 'HS256')
 ADMIN_EMAIL = os.environ['ADMIN_EMAIL']
 ADMIN_PASSWORD = os.environ['ADMIN_PASSWORD']
-OTP_MODE = os.environ.get('OTP_MODE', 'mock')
-OTP_MOCK_CODE = os.environ.get('OTP_MOCK_CODE', '123456')
+GOOGLE_MODE = os.environ.get('GOOGLE_MODE', 'mock')
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 MSG91_AUTH_KEY = os.environ.get('MSG91_AUTH_KEY', '')
-MSG91_TEMPLATE_ID = os.environ.get('MSG91_TEMPLATE_ID', '')
 ORDER_STATUS_TEMPLATES = {
     "confirmed": os.environ.get('MSG91_ORDER_CONFIRMED_TEMPLATE_ID', ''),
     "shipped": os.environ.get('MSG91_ORDER_SHIPPED_TEMPLATE_ID', ''),
@@ -97,12 +98,8 @@ async def get_admin(user: dict = Depends(get_current_user)) -> dict:
     return user
 
 # --- Models ---
-class OtpRequest(BaseModel):
-    mobile: str
-
-class OtpVerify(BaseModel):
-    mobile: str
-    code: str
+class GoogleAuthRequest(BaseModel):
+    credential: str
 
 class AdminLogin(BaseModel):
     email: str
@@ -111,6 +108,7 @@ class AdminLogin(BaseModel):
 class UserProfileUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
+    mobile: Optional[str] = None
 
 class Address(BaseModel):
     id: str = Field(default_factory=new_id)
@@ -195,7 +193,12 @@ class OrderStatusUpdate(BaseModel):
 @app.on_event("startup")
 async def startup():
     get_fs_bucket()
-    await db.users.create_index("mobile", unique=True)
+    try:
+        await db.users.drop_index("mobile_1")  # migrate off the old OTP-login unique-mobile index
+    except Exception:
+        pass
+    await db.users.create_index("mobile", unique=True, sparse=True)
+    await db.users.create_index("google_id", unique=True, sparse=True)
     await db.products.create_index("slug", unique=True)
     await db.products.create_index("category")
     await db.orders.create_index("razorpay_order_id")
@@ -300,12 +303,6 @@ def _msg91_send(mobile: str, template_id: str, variables: dict) -> bool:
         logger.exception("MSG91 request failed")
         return False
 
-def send_otp_sms(mobile: str, code: str) -> bool:
-    if not MSG91_AUTH_KEY or not MSG91_TEMPLATE_ID:
-        logger.error("MSG91_AUTH_KEY / MSG91_TEMPLATE_ID not configured; cannot send OTP SMS")
-        return False
-    return _msg91_send(mobile, MSG91_TEMPLATE_ID, {"OTP": code})
-
 def send_order_status_sms(mobile: str, order_id: str, status: str) -> None:
     """Best-effort order notification - never blocks or fails the order flow."""
     template_id = ORDER_STATUS_TEMPLATES.get(status)
@@ -314,51 +311,45 @@ def send_order_status_sms(mobile: str, order_id: str, status: str) -> None:
     if not _msg91_send(mobile, template_id, {"ORDER_ID": order_id[:8]}):
         logger.error("Order status SMS failed: order=%s status=%s mobile=%s", order_id, status, mobile)
 
-# --- Auth: Mobile OTP ---
-@api.post("/auth/otp/request")
-async def request_otp(data: OtpRequest):
-    mobile = data.mobile.strip()
-    if not mobile.isdigit() or len(mobile) != 10:
-        raise HTTPException(status_code=400, detail="Enter a valid 10-digit mobile number")
-    code = OTP_MOCK_CODE if OTP_MODE == "mock" else "".join(random.choices(string.digits, k=6))
-    await db.otps.update_one(
-        {"mobile": mobile},
-        {"$set": {"mobile": mobile, "code": code, "created_at": now_iso(),
-                  "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()}},
-        upsert=True,
-    )
-    if OTP_MODE != "mock" and not send_otp_sms(mobile, code):
-        raise HTTPException(status_code=502, detail="Failed to send OTP. Please try again.")
-    # In mock mode we return the code for easy demo; in live mode it's sent via MSG91
-    return {"ok": True, "mode": OTP_MODE, "mobile": mobile,
-            "demo_code": code if OTP_MODE == "mock" else None,
-            "message": "OTP sent to your mobile"}
+# --- Auth: Google Sign-In ---
+@api.post("/auth/google")
+async def google_login(data: GoogleAuthRequest):
+    if GOOGLE_MODE == "live":
+        if not GOOGLE_CLIENT_ID:
+            raise HTTPException(status_code=502, detail="Google sign-in is not configured")
+        try:
+            idinfo = google_id_token.verify_oauth2_token(
+                data.credential, google_auth_transport.Request(), GOOGLE_CLIENT_ID
+            )
+        except ValueError:
+            raise HTTPException(status_code=401, detail="Invalid Google credential")
+        if not idinfo.get("email_verified"):
+            raise HTTPException(status_code=401, detail="Google email not verified")
+        google_id, email, name, picture = idinfo["sub"], idinfo.get("email", ""), idinfo.get("name", ""), idinfo.get("picture", "")
+    else:
+        # Mock mode (no real Google Cloud project configured yet): `credential` is a JSON
+        # string standing in for a verified Google profile, so local dev/tests can exercise
+        # this flow without hitting Google. See GOOGLE_MODE in env_config_conventions.
+        try:
+            profile = json.loads(data.credential)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid mock credential")
+        google_id = profile.get("sub") or profile.get("email", "")
+        if not google_id:
+            raise HTTPException(status_code=400, detail="Mock credential needs a sub or email")
+        email, name, picture = profile.get("email", ""), profile.get("name", ""), profile.get("picture", "")
 
-@api.post("/auth/otp/verify")
-async def verify_otp(data: OtpVerify):
-    mobile = data.mobile.strip()
-    code = data.code.strip()
-    otp = await db.otps.find_one({"mobile": mobile}, {"_id": 0})
-    if not otp:
-        raise HTTPException(status_code=400, detail="Please request OTP first")
-    # In mock mode, accept the mock code OR any 6-digit code with default
-    valid = (code == otp["code"]) or (OTP_MODE == "mock" and code == OTP_MOCK_CODE)
-    if not valid:
-        raise HTTPException(status_code=400, detail="Invalid OTP")
-    # Get or create user
-    user = await db.users.find_one({"mobile": mobile}, {"_id": 0})
+    user = await db.users.find_one({"google_id": google_id}, {"_id": 0})
     if not user:
-        user = {
-            "id": new_id(),
-            "mobile": mobile,
-            "name": "",
-            "email": "",
-            "created_at": now_iso(),
-        }
+        user = {"id": new_id(), "google_id": google_id, "email": email, "name": name,
+                "picture": picture, "created_at": now_iso()}
         await db.users.insert_one(user)
-    token = make_token({"sub": user["id"], "role": "user", "mobile": mobile})
-    await db.otps.delete_one({"mobile": mobile})
-    return {"token": token, "user": {k: v for k, v in user.items() if k != "_id"}}
+    else:
+        await db.users.update_one({"id": user["id"]}, {"$set": {"email": email, "name": name, "picture": picture}})
+        user = {**user, "email": email, "name": name, "picture": picture}
+    token = make_token({"sub": user["id"], "role": "user"})
+    return {"token": token, "user": {k: v for k, v in user.items() if k != "_id"},
+            "needs_mobile": not bool(user.get("mobile"))}
 
 @api.post("/auth/admin/login")
 async def admin_login(data: AdminLogin):
@@ -376,8 +367,13 @@ async def update_me(data: UserProfileUpdate, user: dict = Depends(get_current_us
     if user.get("role") == "admin":
         raise HTTPException(status_code=400, detail="Not applicable")
     upd = {k: v for k, v in data.model_dump().items() if v is not None}
+    if "mobile" in upd and not (upd["mobile"].isdigit() and len(upd["mobile"]) == 10):
+        raise HTTPException(status_code=400, detail="Enter a valid 10-digit mobile number")
     if upd:
-        await db.users.update_one({"id": user["id"]}, {"$set": upd})
+        try:
+            await db.users.update_one({"id": user["id"]}, {"$set": upd})
+        except DuplicateKeyError:
+            raise HTTPException(status_code=400, detail="This mobile number is already linked to another account")
     u = await db.users.find_one({"id": user["id"]}, {"_id": 0})
     return {"user": u}
 
