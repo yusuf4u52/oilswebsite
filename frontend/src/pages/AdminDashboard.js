@@ -19,6 +19,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyProduct);
@@ -27,12 +28,14 @@ export default function AdminDashboard() {
   const nav = useNavigate();
 
   const load = async () => {
-    const [s, o, p] = await Promise.all([
+    const [s, o, p, c] = await Promise.all([
       api.get("/admin/stats"),
       api.get("/admin/orders"),
       api.get("/products"),
+      api.get("/admin/users"),
     ]);
     setStats(s.data); setOrders(o.data.orders ?? []); setProducts(p.data.products ?? []);
+    setCustomers(c.data.users ?? []);
   };
 
   useEffect(() => { load().catch(() => {}); }, []);
@@ -141,7 +144,7 @@ export default function AdminDashboard() {
 
         {/* tabs */}
         <div className="flex gap-2 mt-8 border-b" style={{ borderColor: "var(--line)" }}>
-          {["orders", "products"].map((t) => (
+          {["orders", "products", "customers"].map((t) => (
             <button
               data-testid={`admin-tab-${t}`}
               key={t}
@@ -204,6 +207,37 @@ export default function AdminDashboard() {
                   </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {tab === "customers" && (
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left label" style={{ color: "var(--ink-2)" }}>
+                  <th className="py-3">Customer</th><th>Contact</th><th>Joined</th><th>Orders</th><th>Total Spent</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customers.length === 0 && (
+                  <tr><td colSpan={5} className="py-10 text-center" style={{ color: "var(--ink-2)" }}>No customers yet.</td></tr>
+                )}
+                {customers.map((c) => (
+                  <tr key={c.id} className="border-t" style={{ borderColor: "var(--line)" }} data-testid={`admin-customer-${c.id}`}>
+                    <td className="py-3">
+                      <div>{c.name || "—"}</div>
+                    </td>
+                    <td>
+                      <div className="text-xs">{c.email || "—"}</div>
+                      <div className="text-xs" style={{ color: "var(--ink-2)" }}>{c.mobile ? `+91 ${c.mobile}` : ""}</div>
+                    </td>
+                    <td className="text-xs" style={{ color: "var(--ink-2)" }}>{c.created_at ? new Date(c.created_at).toLocaleDateString("en-IN") : "—"}</td>
+                    <td>{c.order_count ?? 0}</td>
+                    <td className="font-medium">{inr(c.total_spent ?? 0)}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

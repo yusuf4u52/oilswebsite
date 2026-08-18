@@ -779,6 +779,22 @@ async def admin_update_order(order_id: str, data: OrderStatusUpdate, admin: dict
             send_order_status_email(updated, data.status)
     return {"ok": True}
 
+@api.get("/admin/users")
+async def admin_users(admin: dict = Depends(get_admin)):
+    users = await db.users.find({}, {"_id": 0, "google_id": 0}).sort("created_at", -1).to_list(1000)
+    pipeline = [
+        {"$match": {"payment_status": {"$in": ["paid", "cod_pending"]}}},
+        {"$group": {"_id": "$user_id", "order_count": {"$sum": 1}, "total_spent": {"$sum": "$total"}}},
+    ]
+    stats_by_user = {}
+    async for r in db.orders.aggregate(pipeline):
+        stats_by_user[r["_id"]] = {"order_count": r["order_count"], "total_spent": round(r["total_spent"], 2)}
+    for u in users:
+        s = stats_by_user.get(u["id"], {"order_count": 0, "total_spent": 0})
+        u["order_count"] = s["order_count"]
+        u["total_spent"] = s["total_spent"]
+    return {"users": users}
+
 @api.get("/admin/stats")
 async def admin_stats(admin: dict = Depends(get_admin)):
     total_orders = await db.orders.count_documents({})
