@@ -3,10 +3,19 @@ import { Link } from "react-router-dom";
 import api, { inr } from "@/lib/api";
 import { ArrowRight, Leaf, Droplet } from "lucide-react";
 
-const HERO_IMG = "https://images.unsplash.com/photo-1768689033119-c3ac1e437d20?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTV8MHwxfHNlYXJjaHwxfHxwb3VyaW5nJTIwcHVyZSUyMGdvbGRlbiUyMG9pbHxlbnwwfHx8fDE3ODYzODM2Njh8MA&ixlib=rb-4.1.0&q=85";
+const HERO_VIDEO = "/media/hero.mp4";
+const HERO_POSTER = "/media/hero-poster.jpg";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduceMotion(mq.matches);
+    const onChange = (e) => setReduceMotion(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
   useEffect(() => {
     api.get("/products").then((r) => setProducts(r.data.products ?? [])).catch(() => {});
   }, []);
@@ -76,7 +85,21 @@ export default function Home() {
           </div>
           <div className="md:col-span-5 relative">
             <div className="relative rounded-[2rem] overflow-hidden aspect-[4/5] grain" style={{ background: "var(--bg-2)" }}>
-              <img src={HERO_IMG} alt="Pouring pure oil" className="w-full h-full object-cover" fetchpriority="high"/>
+              {reduceMotion ? (
+                <img src={HERO_POSTER} alt="Wood-pressed oilseed pulp at the ghani" className="w-full h-full object-cover" fetchpriority="high"/>
+              ) : (
+                <video
+                  src={HERO_VIDEO}
+                  poster={HERO_POSTER}
+                  className="w-full h-full object-cover"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="auto"
+                  aria-label="Wood-pressed oilseed pulp being ground at the ghani"
+                />
+              )}
             </div>
             <div className="absolute -bottom-6 -left-6 bg-white border rounded-2xl p-4 shadow-sm hidden sm:block" style={{ borderColor: "var(--line)" }}>
               <div className="label">Free delivery</div>
