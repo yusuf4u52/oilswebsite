@@ -4,6 +4,7 @@ import api, { inr } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { User, Phone, Mail, MapPin, Package, Plus, Trash2, Star, Save } from "lucide-react";
+import AddressForm from "@/components/AddressForm";
 
 const STATUS_COLORS = {
   pending: "bg-amber-100 text-amber-800",
@@ -50,6 +51,7 @@ export default function Profile() {
   const [addrLoading, setAddrLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [addrForm, setAddrForm] = useState(emptyAddrForm);
+  const [addrSaving, setAddrSaving] = useState(false);
 
   const loadAddresses = async () => {
     setAddrLoading(true);
@@ -63,6 +65,7 @@ export default function Profile() {
     e.preventDefault();
     if (!/^\d{10}$/.test(addrForm.mobile)) return toast.error("Enter valid mobile");
     if (!/^\d{6}$/.test(addrForm.pincode)) return toast.error("Enter valid 6-digit pincode");
+    setAddrSaving(true);
     try {
       await api.post("/addresses", addrForm);
       toast.success("Address saved");
@@ -71,7 +74,7 @@ export default function Profile() {
       await loadAddresses();
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Failed to save address");
-    }
+    } finally { setAddrSaving(false); }
   };
 
   const deleteAddress = async (id) => {
@@ -213,20 +216,14 @@ export default function Profile() {
           </div>
 
           {showAdd && (
-            <form onSubmit={saveAddress} className="border rounded-2xl p-6 mt-4 grid grid-cols-2 gap-4" style={{ borderColor: "var(--line)" }}>
-              <input data-testid="profile-addr-name" required className="input col-span-2" placeholder="Full name" value={addrForm.name} onChange={(e) => setAddrForm({ ...addrForm, name: e.target.value })}/>
-              <input data-testid="profile-addr-mobile" required className="input col-span-2" placeholder="10-digit mobile" value={addrForm.mobile} onChange={(e) => setAddrForm({ ...addrForm, mobile: e.target.value.replace(/\D/g, "") })} maxLength={10}/>
-              <input data-testid="profile-addr-line1" required className="input col-span-2" placeholder="House / Flat / Building, Street" value={addrForm.line1} onChange={(e) => setAddrForm({ ...addrForm, line1: e.target.value })}/>
-              <input data-testid="profile-addr-line2" className="input col-span-2" placeholder="Area / Locality (optional)" value={addrForm.line2} onChange={(e) => setAddrForm({ ...addrForm, line2: e.target.value })}/>
-              <input data-testid="profile-addr-city" required className="input" placeholder="City" value={addrForm.city} onChange={(e) => setAddrForm({ ...addrForm, city: e.target.value })}/>
-              <input data-testid="profile-addr-state" required className="input" placeholder="State" value={addrForm.state} onChange={(e) => setAddrForm({ ...addrForm, state: e.target.value })}/>
-              <input data-testid="profile-addr-pincode" required className="input" placeholder="Pincode" maxLength={6} value={addrForm.pincode} onChange={(e) => setAddrForm({ ...addrForm, pincode: e.target.value.replace(/\D/g, "") })}/>
-              <input data-testid="profile-addr-landmark" className="input" placeholder="Landmark (optional)" value={addrForm.landmark} onChange={(e) => setAddrForm({ ...addrForm, landmark: e.target.value })}/>
-              <div className="col-span-2 flex gap-3 justify-end">
-                <button type="button" onClick={() => setShowAdd(false)} className="btn-ghost">Cancel</button>
-                <button data-testid="profile-addr-save" type="submit" className="btn-primary">Save Address</button>
-              </div>
-            </form>
+            <AddressForm
+              value={addrForm}
+              onChange={setAddrForm}
+              onSubmit={saveAddress}
+              onCancel={() => setShowAdd(false)}
+              submitting={addrSaving}
+              testIdPrefix="profile-addr"
+            />
           )}
         </div>
       )}

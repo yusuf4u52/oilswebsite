@@ -44,12 +44,12 @@ export default function CartDrawer() {
                 <div className="font-medium">{i.name}</div>
                 <div className="text-xs mt-1" style={{ color: "var(--ink-2)" }}>{i.size}</div>
                 <div className="mt-2 flex items-center gap-3">
-                  <div className="flex items-center gap-2 border rounded-full px-2 py-1" style={{ borderColor: "var(--line)" }}>
-                    <button data-testid={`cart-dec-${i.variant_id}`} onClick={() => updateQty(i.product_id, i.variant_id, Math.max(0, i.qty - 1))}><Minus size={14}/></button>
+                  <div className="flex items-center gap-1 border rounded-full" style={{ borderColor: "var(--line)" }}>
+                    <button data-testid={`cart-dec-${i.variant_id}`} className="p-2.5" onClick={() => updateQty(i.product_id, i.variant_id, Math.max(0, i.qty - 1))}><Minus size={14}/></button>
                     <span className="text-sm min-w-[16px] text-center">{i.qty}</span>
-                    <button data-testid={`cart-inc-${i.variant_id}`} onClick={() => updateQty(i.product_id, i.variant_id, i.qty + 1)}><Plus size={14}/></button>
+                    <button data-testid={`cart-inc-${i.variant_id}`} className="p-2.5" onClick={() => updateQty(i.product_id, i.variant_id, i.qty + 1)}><Plus size={14}/></button>
                   </div>
-                  <button data-testid={`cart-remove-${i.variant_id}`} onClick={() => removeItem(i.product_id, i.variant_id)} className="text-sm opacity-60 hover:opacity-100">
+                  <button data-testid={`cart-remove-${i.variant_id}`} onClick={() => removeItem(i.product_id, i.variant_id)} className="text-sm opacity-60 hover:opacity-100 p-2.5">
                     <Trash2 size={16}/>
                   </button>
                 </div>
