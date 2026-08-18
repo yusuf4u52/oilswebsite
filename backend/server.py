@@ -107,7 +107,6 @@ class AdminLogin(BaseModel):
 
 class UserProfileUpdate(BaseModel):
     name: Optional[str] = None
-    email: Optional[str] = None
     mobile: Optional[str] = None
 
 class Address(BaseModel):

@@ -28,9 +28,9 @@ export default function Profile() {
   const setTab = (t) => setParams(t === "details" ? {} : { tab: t });
 
   // details
-  const [form, setForm] = useState({ name: "", email: "", mobile: "" });
+  const [form, setForm] = useState({ name: "", mobile: "" });
   const [saving, setSaving] = useState(false);
-  useEffect(() => { if (user) setForm({ name: user.name || "", email: user.email || "", mobile: user.mobile || "" }); }, [user]);
+  useEffect(() => { if (user) setForm({ name: user.name || "", mobile: user.mobile || "" }); }, [user]);
 
   const saveDetails = async (e) => {
     e.preventDefault();
@@ -157,10 +157,11 @@ export default function Profile() {
           </div>
           <div>
             <label className="label">Email</label>
-            <div className="flex items-center border rounded-xl px-3 mt-2" style={{ borderColor: "var(--line)" }}>
+            <div className="flex items-center border rounded-xl px-3 mt-2" style={{ borderColor: "var(--line)", background: "var(--bg-2)" }}>
               <Mail size={16} className="opacity-60"/>
-              <input data-testid="profile-email" type="email" className="flex-1 bg-transparent outline-none py-3 px-3" placeholder="you@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}/>
+              <span data-testid="profile-email" className="flex-1 py-3 px-3 text-sm">{user?.email}</span>
             </div>
+            <p className="text-xs mt-1" style={{ color: "var(--ink-2)" }}>From your Google account — can&apos;t be changed here.</p>
           </div>
           <button data-testid="profile-save" type="submit" disabled={saving} className="btn-primary">
             <Save size={14}/> {saving ? "Saving…" : "Save changes"}
