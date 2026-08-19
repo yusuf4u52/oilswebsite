@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import api, { inr } from "@/lib/api";
+import api, { inr, resolveImageUrl } from "@/lib/api";
 
 const STATUS_COLORS = {
   pending: "bg-amber-100 text-amber-800",
@@ -47,7 +47,7 @@ export default function Orders() {
             <div className="mt-4 grid sm:grid-cols-2 gap-3">
               {o.items.map((i, idx) => (
                 <div key={idx} className="flex gap-3 items-center">
-                  <img src={i.image_url} alt={i.name} className="w-14 h-16 object-cover rounded-lg" style={{ background: "var(--bg-2)" }}/>
+                  <img src={resolveImageUrl(i.image_url)} alt={i.name} className="w-14 h-16 object-cover rounded-lg" style={{ background: "var(--bg-2)" }}/>
                   <div className="text-sm">
                     <div className="font-medium">{i.name}</div>
                     <div style={{ color: "var(--ink-2)" }}>{i.size} · Qty {i.qty} · {inr(i.price)}</div>

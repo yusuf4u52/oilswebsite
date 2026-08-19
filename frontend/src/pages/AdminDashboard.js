@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api, { inr } from "@/lib/api";
+import api, { inr, resolveImageUrl } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { LogOut, Package, ShoppingBag, IndianRupee, Users, Plus, Trash2, Pencil, X, UploadCloud } from "lucide-react";
@@ -251,7 +251,7 @@ export default function AdminDashboard() {
             <div className="grid md:grid-cols-2 gap-4">
               {products.map((p) => (
                 <div key={p.id} data-testid={`admin-product-${p.slug}`} className="border rounded-md p-5 flex gap-4" style={{ borderColor: "var(--line)" }}>
-                  <img src={p.image_url} alt={p.name} className="w-24 h-28 object-cover rounded-md"/>
+                  <img src={resolveImageUrl(p.image_url)} alt={p.name} className="w-24 h-28 object-cover rounded-md"/>
                   <div className="flex-1">
                     <div className="label" style={{ color: "var(--amber)" }}>{p.category}</div>
                     <div className="serif text-xl mt-1">{p.name}</div>
@@ -292,7 +292,7 @@ export default function AdminDashboard() {
                   <input data-testid="pf-image-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={uploadImage} disabled={uploading}/>
                 </label>
                 {form.image_url && (
-                  <img src={form.image_url} alt="Preview" className="h-12 w-12 object-cover rounded-md border" style={{ borderColor: "var(--line)" }}/>
+                  <img src={resolveImageUrl(form.image_url)} alt="Preview" className="h-12 w-12 object-cover rounded-md border" style={{ borderColor: "var(--line)" }}/>
                 )}
               </div>
               <input data-testid="pf-short" required className="input col-span-2" placeholder="Short description" value={form.short_description} onChange={(e) => setForm({...form, short_description: e.target.value})}/>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import api, { inr } from "@/lib/api";
+import api, { inr, resolveImageUrl } from "@/lib/api";
 import { ArrowRight, Leaf, Droplet } from "lucide-react";
 import SEO from "@/components/SEO";
 
@@ -42,7 +42,7 @@ export default function Home() {
             return (
               <Link data-testid={`bestseller-${p.slug}`} to={`/product/${p.slug}`} key={p.id} className="product-tile block">
                 <div className="aspect-square rounded-xl overflow-hidden bg-white">
-                  <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" decoding="async"/>
+                  <img src={resolveImageUrl(p.image_url)} alt={p.name} className="w-full h-full object-cover" loading="lazy" decoding="async"/>
                 </div>
                 <div className="mt-4">
                   <div className="label" style={{ color: "var(--amber)" }}>{p.category}</div>

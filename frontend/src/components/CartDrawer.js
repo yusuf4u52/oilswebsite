@@ -1,7 +1,7 @@
 import { useCart } from "@/context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { X, Minus, Plus, Trash2 } from "lucide-react";
-import { inr } from "@/lib/api";
+import { inr, resolveImageUrl } from "@/lib/api";
 
 export default function CartDrawer() {
   const { open, setOpen, items, updateQty, removeItem, subtotal, delivery, total } = useCart();
@@ -39,7 +39,7 @@ export default function CartDrawer() {
           )}
           {items.map((i) => (
             <div key={`${i.product_id}-${i.variant_id}`} className="flex gap-4" data-testid={`cart-item-${i.variant_id}`}>
-              <img src={i.image_url} alt={i.name} className="w-20 h-24 object-cover rounded-xl" style={{ background: "var(--bg-2)" }}/>
+              <img src={resolveImageUrl(i.image_url)} alt={i.name} className="w-20 h-24 object-cover rounded-xl" style={{ background: "var(--bg-2)" }}/>
               <div className="flex-1">
                 <div className="font-medium">{i.name}</div>
                 <div className="text-xs mt-1" style={{ color: "var(--ink-2)" }}>{i.size}</div>

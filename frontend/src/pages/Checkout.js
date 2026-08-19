@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api, { inr } from "@/lib/api";
+import api, { inr, resolveImageUrl } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import AuthGate from "@/components/AuthGate";
@@ -65,7 +65,7 @@ function OrderSummaryItems({ items, updateQty, removeItem }) {
     <div className="space-y-4 max-h-72 overflow-auto">
       {items.map((i) => (
         <div key={`${i.product_id}-${i.variant_id}`} className="flex gap-3">
-          <img src={i.image_url} alt={i.name} className="w-14 h-16 object-cover rounded-lg bg-white"/>
+          <img src={resolveImageUrl(i.image_url)} alt={i.name} className="w-14 h-16 object-cover rounded-lg bg-white"/>
           <div className="flex-1 text-sm">
             <div className="font-medium">{i.name}</div>
             <div style={{ color: "var(--ink-2)" }}>{i.size}</div>
@@ -242,7 +242,7 @@ export default function Checkout() {
           <div className="space-y-4 max-h-60 overflow-auto">
             {confirmedOrder._items.map((i) => (
               <div key={`${i.product_id}-${i.variant_id}`} className="flex gap-3">
-                <img src={i.image_url} alt={i.name} className="w-14 h-16 object-cover rounded-lg bg-white"/>
+                <img src={resolveImageUrl(i.image_url)} alt={i.name} className="w-14 h-16 object-cover rounded-lg bg-white"/>
                 <div className="flex-1 text-sm">
                   <div className="font-medium">{i.name}</div>
                   <div style={{ color: "var(--ink-2)" }}>{i.size} · Qty {i.qty}</div>

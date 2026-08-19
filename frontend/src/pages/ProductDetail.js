@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import api, { inr } from "@/lib/api";
+import api, { inr, resolveImageUrl } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
 import { Check, Minus, Plus } from "lucide-react";
@@ -42,7 +42,7 @@ export default function ProductDetail() {
     "@type": "Product",
     name: p.name,
     description: p.short_description,
-    image: [p.image_url, ...(p.gallery || [])].filter(Boolean),
+    image: [p.image_url, ...(p.gallery || [])].filter(Boolean).map(resolveImageUrl),
     sku: p.id,
     brand: { "@type": "Brand", name: "Premium Oils" },
     offers: p.variants.map((v) => ({
@@ -61,19 +61,19 @@ export default function ProductDetail() {
         title={p.name}
         description={p.short_description}
         path={`/product/${p.slug}`}
-        image={p.image_url}
+        image={resolveImageUrl(p.image_url)}
         jsonLd={productJsonLd}
       />
       <div className="grid md:grid-cols-12 gap-10">
         <div className="md:col-span-6">
           <div className="aspect-square rounded-[2rem] overflow-hidden" style={{ background: "var(--bg-2)" }}>
-            <img src={p.image_url} alt={p.name} className="w-full h-full object-cover"/>
+            <img src={resolveImageUrl(p.image_url)} alt={p.name} className="w-full h-full object-cover"/>
           </div>
           {p.gallery.length > 0 && (
             <div className="grid grid-cols-4 gap-3 mt-4">
               {p.gallery.map((g, idx) => (
                 <div key={idx} className="aspect-square rounded-xl overflow-hidden" style={{ background: "var(--bg-2)" }}>
-                  <img src={g} alt={`${p.name} — view ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async"/>
+                  <img src={resolveImageUrl(g)} alt={`${p.name} — view ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async"/>
                 </div>
               ))}
             </div>
