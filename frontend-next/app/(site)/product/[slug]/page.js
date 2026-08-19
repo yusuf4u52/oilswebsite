@@ -43,7 +43,9 @@ export default async function ProductDetail({ params }) {
       <div className="grid md:grid-cols-12 gap-10">
         <div className="md:col-span-6">
           <div className="relative aspect-square rounded-[2rem] overflow-hidden" style={{ background: "var(--bg-2)" }}>
-            <Image src={p.image_url} alt={p.name} fill priority className="object-cover" sizes="(min-width: 768px) 50vw, 100vw"/>
+            {p.image_url && (
+              <Image src={p.image_url} alt={p.name} fill priority className="object-cover" sizes="(min-width: 768px) 50vw, 100vw"/>
+            )}
           </div>
           {p.gallery.length > 0 && (
             <div className="grid grid-cols-4 gap-3 mt-4">

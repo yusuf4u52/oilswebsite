@@ -263,7 +263,11 @@ export default function AdminDashboardView() {
             <div className="grid md:grid-cols-2 gap-4">
               {products.map((p) => (
                 <div key={p.id} data-testid={`admin-product-${p.slug}`} className="border rounded-md p-5 flex gap-4" style={{ borderColor: "var(--line)" }}>
-                  <Image src={p.image_url} alt={p.name} width={96} height={112} className="w-24 h-28 object-cover rounded-md"/>
+                  {p.image_url ? (
+                    <Image src={p.image_url} alt={p.name} width={96} height={112} className="w-24 h-28 object-cover rounded-md"/>
+                  ) : (
+                    <div className="w-24 h-28 rounded-md flex-shrink-0" style={{ background: "var(--bg-2)" }}/>
+                  )}
                   <div className="flex-1">
                     <div className="label" style={{ color: "var(--amber)" }}>{p.category}</div>
                     <div className="serif text-xl mt-1">{p.name}</div>

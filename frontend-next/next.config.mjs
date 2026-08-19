@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    // Product images are only ever set via our own /api/uploads/[fileId]
-    // route (see components/views/AdminDashboardView.js `uploadImage`),
-    // which returns an absolute same-origin URL — so the allowed hosts here
-    // are our own deployment domains, not arbitrary third parties.
+    // Product images come from our own /api/uploads/[fileId] route (see
+    // components/views/AdminDashboardView.js `uploadImage`, which returns
+    // an absolute same-origin URL) — no third-party image hosts are
+    // allowed here.
     remotePatterns: [
       { protocol: "https", hostname: "premiumoils.in", pathname: "/api/uploads/**" },
       { protocol: "https", hostname: "*.premiumoils.in", pathname: "/api/uploads/**" },

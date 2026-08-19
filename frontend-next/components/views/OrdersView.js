@@ -57,7 +57,11 @@ export default function OrdersView() {
             <div className="mt-4 grid sm:grid-cols-2 gap-3">
               {o.items.map((i, idx) => (
                 <div key={idx} className="flex gap-3 items-center">
-                  <Image src={i.image_url} alt={i.name} width={56} height={64} className="w-14 h-16 object-cover rounded-lg" style={{ background: "var(--bg-2)" }}/>
+                  {i.image_url ? (
+                    <Image src={i.image_url} alt={i.name} width={56} height={64} className="w-14 h-16 object-cover rounded-lg" style={{ background: "var(--bg-2)" }}/>
+                  ) : (
+                    <div className="w-14 h-16 rounded-lg flex-shrink-0" style={{ background: "var(--bg-2)" }}/>
+                  )}
                   <div className="text-sm">
                     <div className="font-medium">{i.name}</div>
                     <div style={{ color: "var(--ink-2)" }}>{i.size} · Qty {i.qty} · {inr(i.price)}</div>

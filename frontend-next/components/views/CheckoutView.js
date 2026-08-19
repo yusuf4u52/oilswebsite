@@ -69,7 +69,11 @@ function OrderSummaryItems({ items, updateQty, removeItem }) {
     <div className="space-y-4 max-h-72 overflow-auto">
       {items.map((i) => (
         <div key={`${i.product_id}-${i.variant_id}`} className="flex gap-3">
-          <Image src={i.image_url} alt={i.name} width={56} height={64} className="w-14 h-16 object-cover rounded-lg bg-white"/>
+          {i.image_url ? (
+            <Image src={i.image_url} alt={i.name} width={56} height={64} className="w-14 h-16 object-cover rounded-lg bg-white"/>
+          ) : (
+            <div className="w-14 h-16 rounded-lg bg-white flex-shrink-0"/>
+          )}
           <div className="flex-1 text-sm">
             <div className="font-medium">{i.name}</div>
             <div style={{ color: "var(--ink-2)" }}>{i.size}</div>
@@ -245,7 +249,11 @@ export default function CheckoutView() {
           <div className="space-y-4 max-h-60 overflow-auto">
             {confirmedOrder._items.map((i) => (
               <div key={`${i.product_id}-${i.variant_id}`} className="flex gap-3">
-                <Image src={i.image_url} alt={i.name} width={56} height={64} className="w-14 h-16 object-cover rounded-lg bg-white"/>
+                {i.image_url ? (
+                  <Image src={i.image_url} alt={i.name} width={56} height={64} className="w-14 h-16 object-cover rounded-lg bg-white"/>
+                ) : (
+                  <div className="w-14 h-16 rounded-lg bg-white flex-shrink-0"/>
+                )}
                 <div className="flex-1 text-sm">
                   <div className="font-medium">{i.name}</div>
                   <div style={{ color: "var(--ink-2)" }}>{i.size} · Qty {i.qty}</div>

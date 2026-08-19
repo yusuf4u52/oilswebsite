@@ -86,7 +86,9 @@ export default async function Shop({ searchParams }) {
           return (
             <Link data-testid={`product-card-${p.slug}`} href={`/product/${p.slug}`} key={p.id} className="product-tile block">
               <div className="relative aspect-square rounded-xl overflow-hidden bg-white">
-                <Image src={p.image_url} alt={p.name} fill className="object-cover" sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"/>
+                {p.image_url && (
+                  <Image src={p.image_url} alt={p.name} fill className="object-cover" sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"/>
+                )}
               </div>
               <div className="mt-5">
                 <div className="label" style={{ color: "var(--amber)" }}>{p.category}</div>
