@@ -1,17 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    // Product images come from our own /api/uploads/[fileId] route (see
-    // components/views/AdminDashboardView.js `uploadImage`, which returns
-    // an absolute same-origin URL) — no third-party image hosts are
-    // allowed here.
-    remotePatterns: [
-      { protocol: "https", hostname: "premiumoils.in", pathname: "/api/uploads/**" },
-      { protocol: "https", hostname: "*.premiumoils.in", pathname: "/api/uploads/**" },
-      { protocol: "https", hostname: "*.vercel.app", pathname: "/api/uploads/**" },
-      { protocol: "http", hostname: "localhost", pathname: "/api/uploads/**" },
-    ],
-  },
+  // Product images come from our own /api/uploads/[fileId] route as a
+  // same-origin relative path (see app/api/admin/upload/route.js) — no
+  // remotePatterns needed since next/image never sees an absolute/external
+  // image URL.
   // Next.js streams metadata into <body> by default for JS-executing bots
   // (Googlebot etc. still see it fine) but blocks and renders it in <head>
   // for "HTML-limited" bots that can't run JS. Next's built-in default list

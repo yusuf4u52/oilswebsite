@@ -1,10 +1,12 @@
+import { toAbsoluteUrl } from "@/constants/seo";
+
 export function buildProductJsonLd(p, siteUrl) {
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     name: p.name,
     description: p.short_description,
-    image: [p.image_url, ...(p.gallery || [])].filter(Boolean),
+    image: [p.image_url, ...(p.gallery || [])].filter(Boolean).map(toAbsoluteUrl),
     sku: p.id,
     brand: { "@type": "Brand", name: "Premium Oils" },
     offers: p.variants.map((v) => ({

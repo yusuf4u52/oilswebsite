@@ -1,5 +1,12 @@
 export const SITE_NAME = "Premium Oils";
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.premiumoils.in").replace(/\/$/, "");
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL).replace(/\/$/, "");
+
+// Product image_url is stored as a same-origin relative path (see
+// app/api/admin/upload/route.js). Contexts with no browser base URL of
+// their own — JSON-LD, OG/Twitter meta tags — need it made absolute.
+export function toAbsoluteUrl(path) {
+  return path ? `${SITE_URL}${path}` : path;
+}
 export const DEFAULT_TITLE = "Premium Oils — Kachi Ghani Cold-Pressed Groundnut, Coconut & Almond Oil Online in India";
 export const DEFAULT_DESCRIPTION =
   "Buy 100% natural Kachi Ghani (kacchi ghani) wood-pressed groundnut oil, virgin coconut oil and cold-pressed almond oil online. Shuddh, unrefined oils bottled within 48 hours of pressing and delivered fresh across India.";

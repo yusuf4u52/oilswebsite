@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Check } from "lucide-react";
 import { getProduct, getAllProductSlugs } from "@/lib/server-api";
 import { buildProductJsonLd } from "@/lib/jsonld";
-import { SITE_URL } from "@/constants/seo";
+import { SITE_URL, toAbsoluteUrl } from "@/constants/seo";
 import { pageMetadata } from "@/lib/metadata";
 import ProductPurchasePanel from "@/components/ProductPurchasePanel";
 
@@ -23,7 +23,7 @@ export async function generateMetadata({ params }) {
     title: p.name,
     description: p.short_description,
     path: `/product/${p.slug}`,
-    image: p.image_url,
+    image: toAbsoluteUrl(p.image_url),
   });
 }
 
