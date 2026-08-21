@@ -1,60 +1,39 @@
 # Premium Oils Website
 
-A React storefront for an edible oils brand with a FastAPI backend and MongoDB data layer.
+A Next.js storefront for an edible oils brand with server-rendered pages, API routes, and a MongoDB data layer.
 
 ## Tech stack
 
-- Frontend: React + CRA + CRACO + Tailwind
-- Backend: FastAPI
+- Frontend + Backend: Next.js (App Router, API routes)
 - Database: MongoDB
-- Auth: JWT-based user/admin authentication
+- Auth: Google Sign-In + JWT-based user/admin authentication
 
 ## Project structure
 
-- [frontend](frontend): customer-facing web app
-- [backend](backend): API server and database logic
+- [frontend-next](frontend-next): the Next.js app — pages, API routes, and all product code
 - [memory](memory): product requirements and planning notes
 
 ## Local development
 
-### Frontend
-
 ```bash
-cd frontend
+cd frontend-next
 npm install
-npm start
-```
-
-### Backend
-
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn server:app --reload --host 0.0.0.0 --port 8000
+npm run dev
 ```
 
 ## Environment variables
 
-Copy the example env files and fill in real values before running the app:
+Copy the example env file and fill in real values before running the app:
 
 ```bash
-cp frontend/.env.example frontend/.env
-cp backend/.env.example backend/.env
+cp frontend-next/.env.example frontend-next/.env.local
 ```
 
-See [frontend/.env.example](frontend/.env.example) and [backend/.env.example](backend/.env.example) for the required variables.
+See [frontend-next/.env.example](frontend-next/.env.example) for the required variables.
 
 ## Deployment
 
-Use a split deployment model for production:
-
-- Frontend: Vercel
-- Backend: Render or Railway
-- Database: MongoDB Atlas
-
-The frontend app should point to the deployed backend URL with `REACT_APP_BACKEND_URL`.
+Deployed on Vercel (see [vercel.json](vercel.json)), with MongoDB Atlas as the database.
 
 ## Notes
 
