@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "paths": {
-      "@/*": ["${configDir}/src/*"]
-    }
-  },
-  "include": ["src"]
-}
