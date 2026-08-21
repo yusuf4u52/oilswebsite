@@ -49,4 +49,14 @@ test.describe("admin dashboard", () => {
 
     expect(errors).toEqual([]);
   });
+
+  test("reviews tab renders", async ({ page }) => {
+    const errors = trackConsoleErrors(page);
+
+    await page.click('[data-testid="admin-tab-reviews"]');
+    await expect(page.getByRole("columnheader", { name: "Product" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Rating" })).toBeVisible();
+
+    expect(errors).toEqual([]);
+  });
 });

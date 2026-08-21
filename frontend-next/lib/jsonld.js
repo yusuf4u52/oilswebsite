@@ -1,7 +1,7 @@
 import { toAbsoluteUrl } from "@/constants/seo";
 
-export function buildProductJsonLd(p, siteUrl) {
-  return {
+export function buildProductJsonLd(p, siteUrl, ratingSummary) {
+  const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: p.name,
@@ -18,4 +18,14 @@ export function buildProductJsonLd(p, siteUrl) {
       url: `${siteUrl}/product/${p.slug}`,
     })),
   };
+  // Google requires aggregateRating to be backed by visible on-page review
+  // content, not just markup - only add it when real reviews exist.
+  if (ratingSummary && ratingSummary.count > 0) {
+    jsonLd.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: ratingSummary.average,
+      reviewCount: ratingSummary.count,
+    };
+  }
+  return jsonLd;
 }

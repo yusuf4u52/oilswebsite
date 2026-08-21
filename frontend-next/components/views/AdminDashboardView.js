@@ -12,6 +12,7 @@ import { LogOut, Package, ShoppingBag, IndianRupee, Users } from "lucide-react";
 import OrdersTab from "@/components/admin/OrdersTab";
 import CustomersTab from "@/components/admin/CustomersTab";
 import ProductsTab from "@/components/admin/ProductsTab";
+import ReviewsTab from "@/components/admin/ReviewsTab";
 import ProductFormModal from "@/components/admin/ProductFormModal";
 
 export default function AdminDashboardView() {
@@ -21,20 +22,22 @@ export default function AdminDashboardView() {
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const { logout } = useAuth();
   const router = useRouter();
 
   const load = async () => {
-    const [s, o, p, c] = await Promise.all([
+    const [s, o, p, c, r] = await Promise.all([
       api.get("/admin/stats"),
       api.get("/admin/orders"),
       api.get("/products"),
       api.get("/admin/users"),
+      api.get("/admin/reviews"),
     ]);
     setStats(s.data); setOrders(o.data.orders ?? []); setProducts(p.data.products ?? []);
-    setCustomers(c.data.users ?? []);
+    setCustomers(c.data.users ?? []); setReviews(r.data.reviews ?? []);
   };
 
   useLoadOnReady(authorized, load, "Failed to load dashboard data");
@@ -60,6 +63,17 @@ export default function AdminDashboardView() {
       load();
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Failed to delete product");
+    }
+  };
+
+  const deleteReview = async (id) => {
+    if (!window.confirm("Delete this review?")) return;
+    try {
+      await api.delete(`/admin/reviews/${id}`);
+      toast.success("Deleted");
+      load();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Failed to delete review");
     }
   };
 
@@ -97,7 +111,7 @@ export default function AdminDashboardView() {
 
         {/* tabs */}
         <div className="flex gap-2 mt-8 border-b" style={{ borderColor: "var(--line)" }}>
-          {["orders", "products", "customers"].map((t) => (
+          {["orders", "products", "customers", "reviews"].map((t) => (
             <button
               data-testid={`admin-tab-${t}`}
               key={t}
@@ -115,6 +129,7 @@ export default function AdminDashboardView() {
         {tab === "products" && (
           <ProductsTab products={products} onNew={openNew} onEdit={openEdit} onDelete={deleteProduct} />
         )}
+        {tab === "reviews" && <ReviewsTab reviews={reviews} onDelete={deleteReview} />}
       </div>
 
       {showForm && (

@@ -24,6 +24,7 @@ async function ensureIndexes(db) {
   await db.collection("orders").createIndex("razorpay_order_id");
   await db.collection("orders").createIndex("user_id");
   await db.collection("addresses").createIndex("user_id");
+  await db.collection("reviews").createIndex({ product_id: 1, user_id: 1 }, { unique: true });
 }
 
 export async function getDb() {
