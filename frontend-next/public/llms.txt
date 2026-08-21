@@ -6,17 +6,17 @@ Premium Oils works directly with small farmers and traditional wood/stone-press 
 
 ## Products
 
-- [Cold-Pressed Groundnut Oil](https://www.premiumoils.in/product/cold-pressed-groundnut-oil): Traditional Kachi Ghani wood-pressed groundnut oil, unrefined & unfiltered. Sizes: 500ml, 1L, 5L.
-- [Virgin Coconut Oil](https://www.premiumoils.in/product/virgin-coconut-oil): Cold-pressed virgin coconut oil from fresh Kerala coconuts. Sizes: 500ml, 1L, 5L.
-- [Pure Sweet Almond Oil](https://www.premiumoils.in/product/pure-almond-oil): Cold-pressed sweet almond oil, culinary and cosmetic grade. Sizes: 250ml, 500ml, 1L.
-- [Filtered Groundnut Oil (Family Pack)](https://www.premiumoils.in/product/filtered-groundnut-oil): Lighter, everyday filtered groundnut oil with a high smoke point. Sizes: 1L, 5L, 15L.
+- [Cold-Pressed Groundnut Oil](https://premiumoils.in/product/cold-pressed-groundnut-oil): Traditional Kachi Ghani wood-pressed groundnut oil, unrefined & unfiltered. Sizes: 500ml, 1L, 5L.
+- [Virgin Coconut Oil](https://premiumoils.in/product/virgin-coconut-oil): Cold-pressed virgin coconut oil from fresh Kerala coconuts. Sizes: 500ml, 1L, 5L.
+- [Pure Sweet Almond Oil](https://premiumoils.in/product/pure-almond-oil): Cold-pressed sweet almond oil, culinary and cosmetic grade. Sizes: 250ml, 500ml, 1L.
+- [Filtered Groundnut Oil (Family Pack)](https://premiumoils.in/product/filtered-groundnut-oil): Lighter, everyday filtered groundnut oil with a high smoke point. Sizes: 1L, 5L, 15L.
 
-Full current catalog, pricing, and stock: [Shop](https://www.premiumoils.in/shop) — also available as machine-readable structured data (schema.org Product/Offer) on each product page and in the homepage JSON-LD.
+Full current catalog, pricing, and stock: [Shop](https://premiumoils.in/shop) — also available as machine-readable structured data (schema.org Product/Offer) on each product page and in the homepage JSON-LD.
 
 ## Company
 
-- [About](https://www.premiumoils.in/about): The Kachi Ghani method and how Premium Oils sources from small farmers.
-- [Contact](https://www.premiumoils.in/contact): support@premiumoils.in, +91 8407986619, Mon–Sat 9am–7pm.
+- [About](https://premiumoils.in/about): The Kachi Ghani method and how Premium Oils sources from small farmers.
+- [Contact](https://premiumoils.in/contact): support@premiumoils.in, +91 8407986619, Mon–Sat 9am–7pm.
 
 ## Notes for AI agents
 
