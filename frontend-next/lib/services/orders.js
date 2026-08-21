@@ -1,14 +1,12 @@
 import { randomUUID } from "crypto";
 import { ApiError } from "@/lib/api-error";
 import { getDb } from "@/lib/db/connect";
+import { nowIso, stripId } from "@/lib/db/util";
+import { computeDelivery } from "@/lib/pricing";
 import { RAZORPAY_MODE, RAZORPAY_KEY_ID } from "@/lib/config/env";
 import { createRazorpayOrder, verifyPaymentSignature } from "@/lib/integrations/razorpay";
 import { sendOrderStatusSms } from "@/lib/integrations/sms";
 import { sendOrderConfirmationEmail, sendOrderStatusEmail, sendAdminNewOrderEmail } from "@/lib/integrations/email";
-
-function nowIso() {
-  return new Date().toISOString();
-}
 
 function normalizeItem(i) {
   return {
@@ -24,7 +22,7 @@ function normalizeItem(i) {
 
 export function computeTotals(items) {
   const subtotalRaw = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-  const delivery = subtotalRaw >= 499 ? 0 : 49;
+  const delivery = computeDelivery(subtotalRaw);
   const subtotal = Math.round(subtotalRaw * 100) / 100;
   const total = Math.round((subtotal + delivery) * 100) / 100;
   return { subtotal, delivery, total };
@@ -76,9 +74,8 @@ export async function createOrder(user, input) {
     created_at: nowIso(),
   };
   await db.collection("orders").insertOne(doc);
-  const { _id, ...orderOut } = doc;
   return {
-    order: orderOut,
+    order: stripId(doc),
     razorpay_key_id: RAZORPAY_MODE === "live" ? RAZORPAY_KEY_ID : "rzp_test_mock",
     razorpay_mode: RAZORPAY_MODE,
   };

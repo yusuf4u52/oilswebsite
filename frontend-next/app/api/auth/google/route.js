@@ -3,6 +3,7 @@ import { withApi } from "@/lib/api-error";
 import { makeToken } from "@/lib/auth/jwt";
 import { resolveGoogleCredential } from "@/lib/integrations/google";
 import { upsertGoogleUser } from "@/lib/services/auth";
+import { stripId } from "@/lib/db/util";
 
 export const runtime = "nodejs";
 
@@ -11,6 +12,5 @@ export const POST = withApi(async (request) => {
   const profile = await resolveGoogleCredential(data.credential);
   const user = await upsertGoogleUser(profile);
   const token = makeToken({ sub: user.id, role: "user" });
-  const { _id, ...userOut } = user;
-  return NextResponse.json({ token, user: userOut, needs_mobile: !user.mobile });
+  return NextResponse.json({ token, user: stripId(user), needs_mobile: !user.mobile });
 });

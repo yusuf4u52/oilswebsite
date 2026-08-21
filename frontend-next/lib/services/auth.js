@@ -1,16 +1,21 @@
-import { randomUUID } from "crypto";
+import { randomUUID, timingSafeEqual } from "crypto";
 import { ApiError } from "@/lib/api-error";
 import { getDb } from "@/lib/db/connect";
+import { nowIso } from "@/lib/db/util";
 import { ADMIN_EMAIL, ADMIN_PASSWORD } from "@/lib/config/env";
 
-function nowIso() {
-  return new Date().toISOString();
+// Constant-time compare so response timing can't leak how many leading
+// characters of the password guess were correct. Still a plain-text env-var
+// credential (no hashing) — matching backend/server.py's original behavior.
+function safeEqual(a, b) {
+  const bufA = Buffer.from(String(a));
+  const bufB = Buffer.from(String(b));
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
 }
 
 export function verifyAdminCredentials(email, password) {
-  // Plain-text env-var compare, matching backend/server.py exactly (a pre-existing
-  // gap, not something this migration changes — see plan notes).
-  if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+  if (!safeEqual(email, ADMIN_EMAIL) || !safeEqual(password, ADMIN_PASSWORD)) {
     throw new ApiError(401, "Invalid admin credentials");
   }
   return { id: "admin", role: "admin", email: ADMIN_EMAIL };

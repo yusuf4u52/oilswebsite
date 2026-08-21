@@ -1,12 +1,24 @@
 import { randomUUID } from "crypto";
 import { getDb } from "@/lib/db/connect";
+import { stripId } from "@/lib/db/util";
+import { assertRequiredString, assertMobile, assertPincode } from "@/lib/validate";
 
 export async function listAddresses(userId) {
   const db = await getDb();
   return db.collection("addresses").find({ user_id: userId }, { projection: { _id: 0 } }).limit(50).toArray();
 }
 
+function validateAddressInput(input) {
+  assertRequiredString(input.name, "Name");
+  assertMobile(input.mobile);
+  assertRequiredString(input.line1, "Address line 1");
+  assertRequiredString(input.city, "City");
+  assertRequiredString(input.state, "State");
+  assertPincode(input.pincode);
+}
+
 export async function createAddress(userId, input) {
+  validateAddressInput(input);
   const db = await getDb();
   const addresses = db.collection("addresses");
   const addr = {
@@ -28,8 +40,7 @@ export async function createAddress(userId, input) {
   const count = await addresses.countDocuments({ user_id: userId });
   if (count === 0) addr.is_default = true;
   await addresses.insertOne(addr);
-  const { _id, ...out } = addr;
-  return out;
+  return stripId(addr);
 }
 
 export async function deleteAddress(userId, addrId) {

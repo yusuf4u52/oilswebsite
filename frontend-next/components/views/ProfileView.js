@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { inr } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { useLoadOnReady } from "@/hooks/useLoadOnReady";
 import { toast } from "sonner";
 import { User, Phone, Mail, MapPin, Package, Plus, Trash2, Star, Save } from "lucide-react";
 import AddressForm from "@/components/AddressForm";
@@ -120,12 +121,8 @@ export default function ProfileView() {
     } finally { setOrdersLoading(false); }
   };
 
-  useEffect(() => {
-    if (!authorized) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch once authorized
-    loadAddresses().catch(() => {});
-    loadOrders().catch(() => {});
-  }, [authorized]);
+  useLoadOnReady(authorized, loadAddresses, "Failed to load addresses");
+  useLoadOnReady(authorized, loadOrders, "Failed to load orders");
 
   if (!authorized) return null;
 

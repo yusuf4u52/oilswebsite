@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { computeDelivery } from "@/lib/pricing";
 
 const CartCtx = createContext(null);
 
@@ -69,14 +70,14 @@ export function CartProvider({ children }) {
 
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const count = items.reduce((s, i) => s + i.qty, 0);
-  const delivery = subtotal >= 499 || subtotal === 0 ? 0 : 49;
+  const delivery = computeDelivery(subtotal);
   const total = subtotal + delivery;
 
   return (
     <CartCtx.Provider
       value={{ items, addItem, updateQty, removeItem, clear,
               subtotal, delivery, total, count,
-              open, setOpen }}
+              open, setOpen, hydrated }}
     >
       {children}
     </CartCtx.Provider>
