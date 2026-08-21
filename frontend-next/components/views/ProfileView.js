@@ -21,7 +21,7 @@ const STATUS_COLORS = {
   cancelled: "bg-red-100 text-red-800",
 };
 
-const emptyAddrForm = { name: "", mobile: "", line1: "", line2: "", city: "", state: "", pincode: "", landmark: "" };
+const emptyAddrForm = (user) => ({ name: user?.name || "", mobile: user?.mobile || "", line1: "", line2: "", city: "", state: "", pincode: "", landmark: "" });
 
 const TABS = [
   { key: "details", label: "Account Details", icon: User },
@@ -63,7 +63,7 @@ export default function ProfileView() {
   const [addresses, setAddresses] = useState([]);
   const [addrLoading, setAddrLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [addrForm, setAddrForm] = useState(emptyAddrForm);
+  const [addrForm, setAddrForm] = useState(() => emptyAddrForm(user));
   const [addrSaving, setAddrSaving] = useState(false);
 
   const loadAddresses = async () => {
@@ -83,7 +83,7 @@ export default function ProfileView() {
       await api.post("/addresses", addrForm);
       toast.success("Address saved");
       setShowAdd(false);
-      setAddrForm(emptyAddrForm);
+      setAddrForm(emptyAddrForm(user));
       await loadAddresses();
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Failed to save address");
@@ -190,7 +190,7 @@ export default function ProfileView() {
           <div className="flex items-center justify-between mb-4">
             <div className="serif text-2xl">Saved Addresses</div>
             {!showAdd && (
-              <button data-testid="profile-add-addr" onClick={() => setShowAdd(true)} className="btn-ghost !py-2 !px-3 text-sm"><Plus size={14}/> New</button>
+              <button data-testid="profile-add-addr" onClick={() => { setAddrForm(emptyAddrForm(user)); setShowAdd(true); }} className="btn-ghost !py-2 !px-3 text-sm"><Plus size={14}/> New</button>
             )}
           </div>
 

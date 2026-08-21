@@ -18,9 +18,9 @@ import CheckoutSummaryPanel from "@/components/checkout/CheckoutSummaryPanel";
 import MobileActionBar from "@/components/checkout/MobileActionBar";
 import { toast } from "sonner";
 
-const emptyAddressForm = {
-  name: "", mobile: "", line1: "", line2: "", city: "", state: "", pincode: "", landmark: "",
-};
+const blankAddressForm = (user) => ({
+  name: user?.name || "", mobile: user?.mobile || "", line1: "", line2: "", city: "", state: "", pincode: "", landmark: "",
+});
 
 export default function CheckoutView() {
   const { items, subtotal, delivery, total, clear, updateQty, removeItem, hydrated } = useCart();
@@ -37,7 +37,7 @@ export default function CheckoutView() {
   const [confirmedOrder, setConfirmedOrder] = useState(null);
   const router = useRouter();
 
-  const [form, setForm] = useState(emptyAddressForm);
+  const [form, setForm] = useState(() => blankAddressForm(user));
 
   const loadAddresses = async () => {
     const r = await api.get("/addresses");
@@ -45,7 +45,10 @@ export default function CheckoutView() {
     setAddresses(addrs);
     const def = addrs.find((a) => a.is_default) || addrs[0];
     if (def) setSelectedId(def.id);
-    if (addrs.length === 0) setShowAdd(true);
+    if (addrs.length === 0) {
+      setForm(blankAddressForm(user));
+      setShowAdd(true);
+    }
   };
 
   useEffect(() => {
@@ -68,7 +71,7 @@ export default function CheckoutView() {
       const r = await api.post("/addresses", { ...form, is_default: addresses.length === 0 });
       toast.success("Address saved");
       setShowAdd(false);
-      setForm(emptyAddressForm);
+      setForm(blankAddressForm(user));
       await loadAddresses();
       if (r?.data?.id) setSelectedId(r.data.id);
     } catch (err) {
@@ -216,7 +219,7 @@ export default function CheckoutView() {
             selectedId={selectedId}
             onSelect={setSelectedId}
             showAdd={showAdd}
-            onShowAdd={() => setShowAdd(true)}
+            onShowAdd={() => { setForm(blankAddressForm(user)); setShowAdd(true); }}
             onHideAdd={() => setShowAdd(false)}
             form={form}
             onFormChange={setForm}
