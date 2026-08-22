@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Footer() {
@@ -5,7 +6,10 @@ export default function Footer() {
     <footer className="mt-24 border-t" style={{ borderColor: "var(--line)" }}>
       <div className="max-w-7xl mx-auto px-6 md:px-10 py-14 grid md:grid-cols-4 gap-10">
         <div>
-          <div className="serif text-2xl font-semibold" style={{ color: "var(--brand)" }}>Premium Oils</div>
+          <div className="flex items-center gap-2">
+            <Image src="/logo-icon.png" alt="" width={256} height={256} className="h-10 w-10" />
+            <div className="serif text-2xl font-semibold" style={{ color: "var(--brand)" }}>Premium Oils</div>
+          </div>
           <p className="mt-3 text-sm" style={{ color: "var(--ink-2)" }}>
             Cold-pressed, unrefined, honest oils — made the way your grandmother would have chosen.
           </p>

@@ -52,7 +52,7 @@ const organizationJsonLd = {
   "@type": "Organization",
   name: "Premium Oils",
   url: `${SITE_URL}/`,
-  logo: `${SITE_URL}/media/hero-poster.jpg`,
+  logo: `${SITE_URL}/logo.png`,
   email: "support@premiumoils.in",
   telephone: "+91-8407986619",
   areaServed: "IN",

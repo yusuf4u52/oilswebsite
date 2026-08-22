@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -78,6 +79,7 @@ export default function Header() {
     <header className="glass-header sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-6 md:px-10 py-4 flex items-center justify-between">
         <Link href="/" data-testid="nav-logo" className="flex items-center gap-2">
+          <Image src="/logo-icon.png" alt="" width={256} height={256} priority className="h-10 w-10" />
           <span className="serif text-2xl font-semibold" style={{ color: "var(--brand)" }}>Premium</span>
           <span className="label" style={{ color: "var(--amber)" }}>Oils</span>
         </Link>
