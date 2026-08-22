@@ -54,11 +54,13 @@ export default function CheckoutView() {
   useEffect(() => {
     // Wait for the cart to finish hydrating from localStorage — otherwise
     // this fires with the initial empty items array and redirects away
-    // from checkout even when the real cart is non-empty.
+    // from checkout even when the real cart is non-empty. Also re-checks
+    // whenever the cart empties out later (e.g. the last item gets removed
+    // while already on this page), not just once on mount - otherwise the
+    // summary panel is left showing a delivery-fee-only total for zero items.
     if (!hydrated) return;
     if (items.length === 0 && !confirmedOrder) { router.push("/shop"); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated]);
+  }, [hydrated, items.length, confirmedOrder, router]);
 
   useLoadOnReady(isCustomer, loadAddresses, "Failed to load addresses");
 

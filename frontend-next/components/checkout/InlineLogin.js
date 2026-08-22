@@ -6,7 +6,7 @@ import AuthGate from "@/components/AuthGate";
 // so a guest never gets bounced away from checkout and back.
 export default function InlineLogin() {
   return (
-    <div className="max-w-md">
+    <div className="max-w-md mx-auto text-center">
       <div className="chip mb-6">Sign in to checkout</div>
       <h1 className="serif text-4xl leading-tight">Almost there —<br/>sign in to continue.</h1>
       <p className="mt-3 text-sm" style={{ color: "var(--ink-2)" }}>

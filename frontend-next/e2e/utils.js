@@ -29,12 +29,18 @@ async function loginAsAdmin(page, email, password) {
 }
 
 /**
- * Logs in through the real /login UI using AuthGate's mock-Google form
- * (GOOGLE_MODE=mock locally, no NEXT_PUBLIC_GOOGLE_CLIENT_ID - see .env.local).
- * This persists/updates a row in the `users` collection, same as a real user.
+ * Fills in AuthGate's mock-Google form (GOOGLE_MODE=mock locally, no
+ * NEXT_PUBLIC_GOOGLE_CLIENT_ID - see .env.local) on whatever page currently
+ * renders it - the full /login route or InlineLogin on /checkout - and waits
+ * for login to complete. This persists/updates a row in the `users`
+ * collection, same as a real user.
+ *
+ * Pass `mobile` for flows that require a full customer (e.g. checkout's
+ * `isCustomer` check needs `user.mobile`) - first-time accounts land on
+ * AuthGate's mobile step before login completes, so this fills it in when
+ * asked for. Omit it for flows that don't care (e.g. reviews).
  */
-async function loginAsCustomer(page, email, name) {
-  await page.goto("/login");
+async function completeMockLogin(page, email, name, mobile) {
   await page.fill('[data-testid="google-mock-email"]', email);
   await page.fill('[data-testid="google-mock-name"]', name);
   await page.click('[data-testid="google-mock-submit"]');
@@ -42,6 +48,30 @@ async function loginAsCustomer(page, email, name) {
   // waitForURL would hang on its default waitUntil: "load". Wait on the
   // actual signal instead - AuthContext.loginWithToken sets this synchronously.
   await page.waitForFunction(() => !!localStorage.getItem("token"));
+
+  if (mobile) {
+    // The token lands in localStorage (above) synchronously before React
+    // commits AuthGate's step change, so a one-shot `.count()` check here
+    // would race the re-render. Poll briefly instead of sampling once.
+    const mobileInput = page.locator('[data-testid="mobile-gate-input"]');
+    const appeared = await mobileInput.waitFor({ state: "visible", timeout: 3000 }).then(() => true).catch(() => false);
+    if (appeared) {
+      await mobileInput.fill(mobile);
+      await page.click('[data-testid="mobile-gate-submit"]');
+      // Wait for the PUT /auth/me save to actually land - the mobile form
+      // unmounts (full-page /login navigates away; inline on /checkout the
+      // parent view swaps to the real checkout content) once `user.mobile`
+      // is set. A caller that navigates immediately after clicking Continue
+      // can otherwise abort that in-flight request, leaving mobile unsaved.
+      await mobileInput.waitFor({ state: "hidden" });
+    }
+  }
+}
+
+/** Logs in through the real /login route. See completeMockLogin for the `mobile` param. */
+async function loginAsCustomer(page, email, name, mobile) {
+  await page.goto("/login");
+  await completeMockLogin(page, email, name, mobile);
 }
 
 /** Reads the JWT payload's `sub` (the app's internal user id) out of localStorage. */
@@ -84,6 +114,7 @@ module.exports = {
   seedCart,
   loginAsAdmin,
   loginAsCustomer,
+  completeMockLogin,
   currentUserId,
   deleteReviewsByUser,
   closeDb,

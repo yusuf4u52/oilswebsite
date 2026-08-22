@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { ShoppingBag, User, Package, MapPin, LogOut, ChevronDown } from "lucide-react";
@@ -72,6 +72,7 @@ export default function Header() {
   const { count, setOpen } = useCart();
   const { user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   return (
     <header className="glass-header sticky top-0 z-40">
@@ -91,7 +92,7 @@ export default function Header() {
           {user && user.role !== "admin" ? (
             <UserMenu />
           ) : (
-            <button data-testid="nav-login" onClick={() => router.push("/login")} className="btn-ghost !py-2 !px-3">
+            <button data-testid="nav-login" onClick={() => router.push(`/login?next=${encodeURIComponent(pathname)}`)} className="btn-ghost !py-2 !px-3">
               <User size={16}/><span className="hidden sm:inline">Login</span>
             </button>
           )}
