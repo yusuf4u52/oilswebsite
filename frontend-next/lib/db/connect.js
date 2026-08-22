@@ -17,14 +17,29 @@ async function ensureIndexes(db) {
   } catch {
     // ignore
   }
-  await db.collection("users").createIndex("mobile", { unique: true, sparse: true });
-  await db.collection("users").createIndex("google_id", { unique: true, sparse: true });
-  await db.collection("products").createIndex("slug", { unique: true });
-  await db.collection("products").createIndex("category");
-  await db.collection("orders").createIndex("razorpay_order_id");
-  await db.collection("orders").createIndex("user_id");
-  await db.collection("addresses").createIndex("user_id");
-  await db.collection("reviews").createIndex({ product_id: 1, user_id: 1 }, { unique: true });
+  // Each createIndex is wrapped individually: concurrent cold starts (two dev
+  // servers, overlapping restarts, parallel serverless invocations) can abort
+  // each other's background index builds (MongoServerError 276). That's fine
+  // to ignore — whichever build lands first satisfies the index for everyone
+  // sharing the collection — but it must not reject this function, since a
+  // rejection here would permanently poison the cached connection promise.
+  const specs = [
+    ["users", "mobile", { unique: true, sparse: true }],
+    ["users", "google_id", { unique: true, sparse: true }],
+    ["products", "slug", { unique: true }],
+    ["products", "category", undefined],
+    ["orders", "razorpay_order_id", undefined],
+    ["orders", "user_id", undefined],
+    ["addresses", "user_id", undefined],
+    ["reviews", { product_id: 1, user_id: 1 }, { unique: true }],
+  ];
+  for (const [collection, keys, options] of specs) {
+    try {
+      await db.collection(collection).createIndex(keys, options);
+    } catch (err) {
+      console.error(`ensureIndexes: failed to create index on ${collection}`, err.message);
+    }
+  }
 }
 
 export async function getDb() {
@@ -38,7 +53,13 @@ export async function getDb() {
       cached.client = client;
       cached.db = db;
       return db;
-    })();
+    })().catch((err) => {
+      // Don't leave a rejected promise cached — a transient connect failure
+      // would otherwise break every future getDb() call in this process
+      // until restart. Let the next call retry from scratch.
+      cached.initPromise = null;
+      throw err;
+    });
   }
   return cached.initPromise;
 }
