@@ -1,10 +1,11 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { inr } from "@/lib/utils";
 
 const PAYMENT_COLORS = { paid: "#1B7A43", cod_pending: "#B7791F", failed: "#C0392B" };
 
-export default function OrdersTab({ orders, onChangeStatus }) {
+export default function OrdersTab({ orders, onChangeStatus, onDelete }) {
   return (
     <div className="mt-6 overflow-x-auto">
       <table className="w-full text-sm">
@@ -50,7 +51,18 @@ export default function OrdersTab({ orders, onChangeStatus }) {
                     {statusOptions.map((s) => <option key={s}>{s}</option>)}
                   </select>
                 </td>
-                <td></td>
+                <td>
+                  {isUnpaid && (
+                    <button
+                      data-testid={`admin-order-delete-${o.id}`}
+                      onClick={() => onDelete(o.id)}
+                      className="btn-ghost !py-1 !px-2"
+                      aria-label="Delete order"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </td>
               </tr>
             );
           })}

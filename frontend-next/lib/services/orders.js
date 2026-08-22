@@ -168,6 +168,19 @@ export async function listAllOrdersAdmin() {
   return db.collection("orders").find({}, { projection: { _id: 0 } }).sort({ created_at: -1 }).limit(500).toArray();
 }
 
+export async function deleteOrderAdmin(orderId) {
+  const db = await getDb();
+  const orders = db.collection("orders");
+  const order = await orders.findOne({ id: orderId }, { projection: { _id: 0 } });
+  if (!order) throw new ApiError(404, "Order not found");
+  const isUnpaid = order.payment_method === "razorpay" && order.payment_status !== "paid";
+  if (!isUnpaid) {
+    throw new ApiError(400, "Only unpaid orders can be deleted");
+  }
+  const res = await orders.deleteOne({ id: orderId });
+  return res.deletedCount;
+}
+
 const ALLOWED_STATUSES = new Set(["pending", "confirmed", "shipped", "delivered", "cancelled"]);
 
 export async function updateOrderStatusAdmin(orderId, status) {

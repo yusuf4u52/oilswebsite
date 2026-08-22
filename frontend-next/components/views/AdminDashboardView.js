@@ -66,6 +66,17 @@ export default function AdminDashboardView() {
     }
   };
 
+  const deleteOrder = async (id) => {
+    if (!window.confirm("Delete this unpaid order?")) return;
+    try {
+      await api.delete(`/admin/orders/${id}`);
+      toast.success("Deleted");
+      load();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Failed to delete order");
+    }
+  };
+
   const deleteReview = async (id) => {
     if (!window.confirm("Delete this review?")) return;
     try {
@@ -124,7 +135,7 @@ export default function AdminDashboardView() {
           ))}
         </div>
 
-        {tab === "orders" && <OrdersTab orders={orders} onChangeStatus={changeStatus} />}
+        {tab === "orders" && <OrdersTab orders={orders} onChangeStatus={changeStatus} onDelete={deleteOrder} />}
         {tab === "customers" && <CustomersTab customers={customers} />}
         {tab === "products" && (
           <ProductsTab products={products} onNew={openNew} onEdit={openEdit} onDelete={deleteProduct} />

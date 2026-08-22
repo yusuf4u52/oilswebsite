@@ -102,6 +102,19 @@ async function deleteReviewsByUser(userId) {
   await db.collection("reviews").deleteMany({ user_id: userId });
 }
 
+/** Inserts a minimal order fixture directly into the DB, bypassing checkout/Razorpay. */
+async function insertOrder(order) {
+  const db = await getDb();
+  await db.collection("orders").insertOne(order);
+}
+
+/** Removes an order fixture by id - call in afterEach/afterAll even if the test already deleted it. */
+async function deleteOrderById(orderId) {
+  if (!orderId) return;
+  const db = await getDb();
+  await db.collection("orders").deleteMany({ id: orderId });
+}
+
 async function closeDb() {
   if (client) {
     await client.close();
@@ -117,5 +130,7 @@ module.exports = {
   completeMockLogin,
   currentUserId,
   deleteReviewsByUser,
+  insertOrder,
+  deleteOrderById,
   closeDb,
 };
