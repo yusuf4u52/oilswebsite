@@ -36,7 +36,6 @@ An India-focused D2C ecommerce store for cold-pressed / wood-pressed edible oils
 
 ## Backlog / P1
 - Real Razorpay live keys (currently mock)
-- Real SMTP credentials for order emails (currently `EMAIL_MODE=mock`, logs instead of sending)
 - Real MSG91 auth key + order-status DLT templates (currently blank, SMS is a no-op)
 - Product search
 - Coupons / promo codes
