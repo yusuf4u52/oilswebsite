@@ -8,16 +8,34 @@ import { createRazorpayOrder, verifyPaymentSignature } from "@/lib/integrations/
 import { sendOrderStatusSms } from "@/lib/integrations/sms";
 import { sendOrderConfirmationEmail, sendOrderStatusEmail, sendAdminNewOrderEmail } from "@/lib/integrations/email";
 
-function normalizeItem(i) {
-  return {
-    product_id: i.product_id,
-    variant_id: i.variant_id,
-    name: i.name,
-    size: i.size,
-    price: i.price,
-    qty: i.qty,
-    image_url: i.image_url,
-  };
+// Prices/names/images must come from the stored product, never from the
+// client - a request body only supplies product_id/variant_id/qty. Trusting
+// client-supplied prices lets an attacker set their own total (including for
+// the real Razorpay charge and for COD orders, which have no other checkpoint).
+async function resolveOrderItems(db, rawItems) {
+  const items = [];
+  for (const raw of rawItems) {
+    const qty = raw.qty;
+    if (!Number.isInteger(qty) || qty < 1) {
+      throw new ApiError(400, "Invalid item quantity");
+    }
+    const product = await db
+      .collection("products")
+      .findOne({ id: raw.product_id, is_active: true }, { projection: { _id: 0 } });
+    if (!product) throw new ApiError(400, "Product not found");
+    const variant = (product.variants || []).find((v) => v.id === raw.variant_id);
+    if (!variant) throw new ApiError(400, "Product variant not found");
+    items.push({
+      product_id: product.id,
+      variant_id: variant.id,
+      name: product.name,
+      size: variant.size,
+      price: variant.price,
+      qty,
+      image_url: product.image_url,
+    });
+  }
+  return items;
 }
 
 export function computeTotals(items) {
@@ -42,7 +60,7 @@ export async function createOrder(user, input) {
     .findOne({ id: input.address_id, user_id: user.id }, { projection: { _id: 0 } });
   if (!address) throw new ApiError(400, "Address not found");
 
-  const items = input.items.map(normalizeItem);
+  const items = await resolveOrderItems(db, input.items);
   const { subtotal, delivery, total } = computeTotals(items);
   const amountPaise = Math.round(total * 100);
   const paymentMethod = input.payment_method || "razorpay";
