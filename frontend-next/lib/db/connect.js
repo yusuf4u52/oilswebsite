@@ -49,9 +49,15 @@ export async function getDb() {
       const client = new MongoClient(MONGO_URL);
       await client.connect();
       const db = client.db(DB_NAME);
-      await ensureIndexes(db);
       cached.client = client;
       cached.db = db;
+      // Don't block getDb() on this: indexes are idempotent and not needed
+      // for reads to work, but a cold start awaiting 9 sequential round
+      // trips (dropIndex + 8x createIndex) to Atlas before returning was
+      // adding multi-second latency to every request on a fresh Lambda
+      // instance — including unrelated ones like image streaming — which
+      // could tip them past the function timeout.
+      ensureIndexes(db).catch((err) => console.error("ensureIndexes: unexpected failure", err.message));
       return db;
     })().catch((err) => {
       // Don't leave a rejected promise cached — a transient connect failure
