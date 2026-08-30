@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { inr } from "@/lib/utils";
@@ -36,8 +36,15 @@ export default function CheckoutView() {
   const [placing, setPlacing] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState(null);
   const router = useRouter();
+  const rzRef = useRef(null);
 
   const [form, setForm] = useState(() => blankAddressForm(user));
+
+  // Razorpay's widget injects its iframe straight into document.body, outside
+  // React's tree, so a client-side route change (e.g. the empty-cart redirect
+  // below) won't tear it down on its own - it keeps polling for a late payment
+  // success in the background. Close it explicitly whenever this view unmounts.
+  useEffect(() => () => rzRef.current?.close(), []);
 
   const loadAddresses = async () => {
     const r = await api.get("/addresses");
@@ -138,12 +145,20 @@ export default function CheckoutView() {
           contact: order.address.mobile,
         },
         theme: { color: "#1B4332" },
+        // We already let the customer retry via a fresh checkout attempt (which
+        // reuses the pending order server-side), so we don't need Razorpay's own
+        // auto-retry - it keeps its checkout session alive and polling in the
+        // background otherwise, even after the modal is dismissed.
+        retry: { enabled: false },
         modal: {
           ondismiss: () => {
+            rzRef.current?.close();
+            rzRef.current = null;
             toast.error("Payment cancelled");
           },
         },
         handler: async (resp) => {
+          rzRef.current = null;
           try {
             await api.post("/orders/verify", {
               order_id: order.id,
@@ -158,6 +173,7 @@ export default function CheckoutView() {
         },
       };
       const rz = new window.Razorpay(options);
+      rzRef.current = rz;
       rz.on("payment.failed", (resp) => {
         toast.error(resp?.error?.description || "Payment failed. Please try again.");
       });
