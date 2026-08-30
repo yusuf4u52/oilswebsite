@@ -24,7 +24,7 @@ export default function Providers({ children }) {
       <AuthProvider>
         <CartProvider>
           {children}
-          <Toaster position="top-right" richColors />
+          <Toaster position="top-right" richColors closeButton />
         </CartProvider>
       </AuthProvider>
     </QueryClientProvider>
