@@ -33,7 +33,15 @@ export default function OrdersTab({ orders, onChangeStatus, onDelete }) {
                   <div>{o.address.name}</div>
                   <div className="text-xs" style={{ color: "var(--ink-2)" }}>+91 {o.address.mobile}</div>
                 </td>
-                <td>{o.items.reduce((s, i) => s + i.qty, 0)}</td>
+                <td>
+                  <div className="space-y-0.5">
+                    {o.items.map((i, idx) => (
+                      <div key={idx} className="text-xs whitespace-nowrap">
+                        {i.name}{i.size ? ` (${i.size})` : ""} × {i.qty}
+                      </div>
+                    ))}
+                  </div>
+                </td>
                 <td className="font-medium">{inr(o.total)}</td>
                 <td className="text-xs">
                   <div>{o.payment_method}</div>
