@@ -68,7 +68,16 @@ export async function createOrder(user, input) {
     throw new ApiError(400, "Order amount must be at least ₹1 for online payment");
   }
 
-  const orderId = randomUUID();
+  // Reuse an abandoned checkout's order instead of leaving it orphaned and
+  // inserting a duplicate: if the last attempt never reached payment, retrying
+  // from the cart should continue that order, not start a new one.
+  const orders = db.collection("orders");
+  const existing = await orders.findOne(
+    { user_id: user.id, status: "pending", payment_status: "pending" },
+    { sort: { created_at: -1 } }
+  );
+
+  const orderId = existing?.id || randomUUID();
   let razorpayOrderId = null;
   if (paymentMethod === "razorpay") {
     razorpayOrderId = await createRazorpayOrder(amountPaise, orderId);
@@ -91,7 +100,11 @@ export async function createOrder(user, input) {
     status: "pending",
     created_at: nowIso(),
   };
-  await db.collection("orders").insertOne(doc);
+  if (existing) {
+    await orders.updateOne({ id: orderId }, { $set: doc });
+  } else {
+    await orders.insertOne(doc);
+  }
   return {
     order: stripId(doc),
     razorpay_key_id: RAZORPAY_MODE === "live" ? RAZORPAY_KEY_ID : "rzp_test_mock",

@@ -115,6 +115,16 @@ async function deleteOrderById(orderId) {
   await db.collection("orders").deleteMany({ id: orderId });
 }
 
+/** Returns every order for a given user id, most recent first - for asserting on order-creation behavior in tests. */
+async function findOrdersByUser(userId) {
+  const db = await getDb();
+  return db
+    .collection("orders")
+    .find({ user_id: userId }, { projection: { _id: 0 } })
+    .sort({ created_at: -1 })
+    .toArray();
+}
+
 async function closeDb() {
   if (client) {
     await client.close();
@@ -132,5 +142,6 @@ module.exports = {
   deleteReviewsByUser,
   insertOrder,
   deleteOrderById,
+  findOrdersByUser,
   closeDb,
 };
