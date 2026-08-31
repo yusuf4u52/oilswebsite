@@ -4,6 +4,21 @@ const nextConfig = {
   // same-origin relative path (see app/api/admin/upload/route.js) — no
   // remotePatterns needed since next/image never sees an absolute/external
   // image URL.
+  //
+  // unoptimized: production 500s on every /_next/image request
+  // ("Cannot find module './.next/server/pages/_next/image.js'") even
+  // though `next build` + `next start` serve it correctly locally — Next 16
+  // no longer compiles the image optimizer as a discrete pages/ file
+  // (routes-manifest.json has no "images" entry, pages-manifest.json only
+  // has 404/500), but the deployment platform's Next.js runtime still
+  // requires it at that legacy path. This is a platform-adapter/Next-16
+  // version-skew issue, not something fixable from next.config beyond
+  // disabling the optimizer. Revisit (remove this) once the platform's
+  // Next.js runtime catches up to 16.x's new build output, or confirm via a
+  // fresh deploy after the 16.3.3 upgrade before re-enabling.
+  images: {
+    unoptimized: true,
+  },
   // Next.js streams metadata into <body> by default for JS-executing bots
   // (Googlebot etc. still see it fine) but blocks and renders it in <head>
   // for "HTML-limited" bots that can't run JS. Next's built-in default list
