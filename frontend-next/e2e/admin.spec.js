@@ -64,6 +64,27 @@ test.describe("admin dashboard", () => {
     expect(errors).toEqual([]);
   });
 
+  test("new-product modal offers a per-variant image upload for each variant row", async ({ page }) => {
+    const errors = trackConsoleErrors(page);
+
+    await page.click('[data-testid="admin-tab-products"]');
+    await page.click('[data-testid="admin-new-product"]');
+    await expect(page.locator('[data-testid="pf-save"]')).toBeVisible();
+
+    // One variant exists by default — its own image upload input should be present.
+    await expect(page.locator('[data-testid="pf-v-image-0"]')).toHaveCount(1);
+
+    // Adding a second variant gets its own independent image upload input too.
+    await page.click('button:has-text("Add variant")');
+    await expect(page.locator('[data-testid="pf-v-image-1"]')).toHaveCount(1);
+
+    // Never click Save here — this suite runs against the real dev database.
+    await page.getByRole("button", { name: "Cancel" }).click();
+    await expect(page.locator('[data-testid="pf-save"]')).toHaveCount(0);
+
+    expect(errors).toEqual([]);
+  });
+
   test("customers tab renders", async ({ page }) => {
     const errors = trackConsoleErrors(page);
 

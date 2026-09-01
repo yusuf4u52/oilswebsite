@@ -125,6 +125,23 @@ async function findOrdersByUser(userId) {
     .toArray();
 }
 
+/**
+ * Inserts a standalone fixture product directly into the DB, bypassing the
+ * admin API. Give it its own unique slug (not an existing catalog product)
+ * so tests never touch the developer's real catalog - see e2e/README.md.
+ */
+async function insertProduct(product) {
+  const db = await getDb();
+  await db.collection("products").insertOne(product);
+}
+
+/** Removes a fixture product by id - call in afterEach/afterAll even if the test already deleted it. */
+async function deleteProductById(productId) {
+  if (!productId) return;
+  const db = await getDb();
+  await db.collection("products").deleteMany({ id: productId });
+}
+
 async function closeDb() {
   if (client) {
     await client.close();
@@ -143,5 +160,7 @@ module.exports = {
   insertOrder,
   deleteOrderById,
   findOrdersByUser,
+  insertProduct,
+  deleteProductById,
   closeDb,
 };

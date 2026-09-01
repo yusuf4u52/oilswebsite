@@ -11,7 +11,7 @@ const emptyForm = {
   short_description: "", description: "",
   image_url: "", gallery: [],
   highlights: [],
-  variants: [{ size: "500ml", price: 0, mrp: 0, stock: 100 }],
+  variants: [{ size: "500ml", price: 0, mrp: 0, stock: 100, image_url: "" }],
   is_active: true,
 };
 
@@ -32,6 +32,7 @@ function toFormState(p) {
 export default function ProductFormModal({ editing, onClose, onSaved }) {
   const [form, setForm] = useState(() => toFormState(editing));
   const [uploading, setUploading] = useState(false);
+  const [variantUploadingIdx, setVariantUploadingIdx] = useState(null);
 
   const saveProduct = async (e) => {
     e.preventDefault();
@@ -70,8 +71,26 @@ export default function ProductFormModal({ editing, onClose, onSaved }) {
   const updateVariant = (idx, patch) => {
     const v = [...form.variants]; v[idx] = { ...v[idx], ...patch }; setForm({ ...form, variants: v });
   };
-  const addVariant = () => setForm({ ...form, variants: [...form.variants, { size: "", price: 0, mrp: 0, stock: 100 }] });
+  const addVariant = () => setForm({ ...form, variants: [...form.variants, { size: "", price: 0, mrp: 0, stock: 100, image_url: "" }] });
   const removeVariant = (idx) => setForm({ ...form, variants: form.variants.filter((_, i) => i !== idx) });
+
+  const uploadVariantImage = async (idx, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append("file", file);
+    setVariantUploadingIdx(idx);
+    try {
+      const res = await api.post("/admin/upload", fd);
+      updateVariant(idx, { image_url: res.data.url });
+      toast.success("Variant image uploaded");
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Upload failed");
+    } finally {
+      setVariantUploadingIdx(null);
+      e.target.value = "";
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -113,12 +132,23 @@ export default function ProductFormModal({ editing, onClose, onSaved }) {
             <div className="col-span-1"></div>
           </div>
           {form.variants.map((v, idx) => (
-            <div key={idx} className="grid grid-cols-12 gap-2 mb-2 items-center">
-              <input data-testid={`pf-v-size-${idx}`} className="input col-span-3" placeholder="Size" value={v.size} onChange={(e) => updateVariant(idx, { size: e.target.value })}/>
-              <input data-testid={`pf-v-price-${idx}`} type="number" className="input col-span-3" placeholder="Price" value={v.price} onChange={(e) => updateVariant(idx, { price: Number(e.target.value) })}/>
-              <input data-testid={`pf-v-mrp-${idx}`} type="number" className="input col-span-3" placeholder="MRP" value={v.mrp} onChange={(e) => updateVariant(idx, { mrp: Number(e.target.value) })}/>
-              <input data-testid={`pf-v-stock-${idx}`} type="number" className="input col-span-2" placeholder="Stock" value={v.stock} onChange={(e) => updateVariant(idx, { stock: Number(e.target.value) })}/>
-              <button type="button" onClick={() => removeVariant(idx)} className="col-span-1"><Trash2 size={14}/></button>
+            <div key={idx} className="border rounded-xl p-3 mb-2" style={{ borderColor: "var(--line)" }}>
+              <div className="grid grid-cols-12 gap-2 items-center">
+                <input data-testid={`pf-v-size-${idx}`} className="input col-span-3" placeholder="Size" value={v.size} onChange={(e) => updateVariant(idx, { size: e.target.value })}/>
+                <input data-testid={`pf-v-price-${idx}`} type="number" className="input col-span-3" placeholder="Price" value={v.price} onChange={(e) => updateVariant(idx, { price: Number(e.target.value) })}/>
+                <input data-testid={`pf-v-mrp-${idx}`} type="number" className="input col-span-3" placeholder="MRP" value={v.mrp} onChange={(e) => updateVariant(idx, { mrp: Number(e.target.value) })}/>
+                <input data-testid={`pf-v-stock-${idx}`} type="number" className="input col-span-2" placeholder="Stock" value={v.stock} onChange={(e) => updateVariant(idx, { stock: Number(e.target.value) })}/>
+                <button type="button" onClick={() => removeVariant(idx)} className="col-span-1"><Trash2 size={14}/></button>
+              </div>
+              <div className="flex items-center gap-3 mt-2">
+                <label className="btn-ghost !py-1 !px-2 !rounded-md text-xs cursor-pointer">
+                  <UploadCloud size={11}/> {variantUploadingIdx === idx ? "Uploading..." : v.image_url ? "Replace variant image" : "Upload variant image"}
+                  <input data-testid={`pf-v-image-${idx}`} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => uploadVariantImage(idx, e)} disabled={variantUploadingIdx === idx}/>
+                </label>
+                {v.image_url && (
+                  <Image src={v.image_url} alt={`${v.size || "Variant"} preview`} width={32} height={32} className="h-8 w-8 object-cover rounded-md border" style={{ borderColor: "var(--line)" }}/>
+                )}
+              </div>
             </div>
           ))}
           <button type="button" onClick={addVariant} className="btn-ghost !py-1.5 !px-3 !rounded-md text-xs"><Plus size={12}/> Add variant</button>

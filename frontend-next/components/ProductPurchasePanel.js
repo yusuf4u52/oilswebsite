@@ -5,9 +5,10 @@ import { toast } from "sonner";
 import { Minus, Plus } from "lucide-react";
 import { inr } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
+import { useProductVariant } from "@/context/ProductVariantContext";
 
 export default function ProductPurchasePanel({ product: p }) {
-  const [variant, setVariant] = useState(p.variants[0]);
+  const { variant, setVariant } = useProductVariant();
   const [qty, setQty] = useState(1);
   const { addItem } = useCart();
 
@@ -19,7 +20,7 @@ export default function ProductPurchasePanel({ product: p }) {
       size: variant.size,
       price: variant.price,
       qty,
-      image_url: p.image_url,
+      image_url: variant.image_url || p.image_url,
     });
     toast.success("Added to bag");
   };
