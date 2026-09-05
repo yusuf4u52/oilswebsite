@@ -55,6 +55,14 @@ const organizationJsonLd = {
   logo: `${SITE_URL}/logo.png`,
   email: "support@premiumoils.in",
   telephone: "+91-8407986619",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "Kumar Palm Meadows, Pisoli",
+    addressLocality: "Pune",
+    addressRegion: "Maharashtra",
+    postalCode: "411048",
+    addressCountry: "IN",
+  },
   areaServed: "IN",
   sameAs: [],
 };

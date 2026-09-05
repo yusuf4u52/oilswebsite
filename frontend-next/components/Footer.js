@@ -35,6 +35,7 @@ export default function Footer() {
             <li><a href="tel:+918407986619" className="underline underline-offset-4 hover:opacity-70">+91 8407986619</a></li>
             <li><a href="mailto:support@premiumoils.in" className="underline underline-offset-4 hover:opacity-70">support@premiumoils.in</a></li>
             <li>Mon–Sat, 9am–7pm</li>
+            <li>Kumar Palm Meadows, Pisoli, Pune - 411048</li>
           </ul>
         </div>
       </div>
