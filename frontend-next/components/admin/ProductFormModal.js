@@ -11,6 +11,7 @@ const emptyForm = {
   short_description: "", description: "",
   image_url: "", gallery: [],
   highlights: [],
+  uses: [],
   variants: [{ size: "500ml", price: 0, mrp: 0, stock: 100, image_url: "" }],
   is_active: true,
 };
@@ -22,6 +23,7 @@ function toFormState(p) {
     short_description: p.short_description, description: p.description,
     image_url: p.image_url, gallery: p.gallery || [],
     highlights: p.highlights || [],
+    uses: (p.uses || []).map((u) => ({ ...u })),
     variants: p.variants.map((v) => ({ ...v })),
     is_active: p.is_active,
   };
@@ -73,6 +75,12 @@ export default function ProductFormModal({ editing, onClose, onSaved }) {
   };
   const addVariant = () => setForm({ ...form, variants: [...form.variants, { size: "", price: 0, mrp: 0, stock: 100, image_url: "" }] });
   const removeVariant = (idx) => setForm({ ...form, variants: form.variants.filter((_, i) => i !== idx) });
+
+  const updateUse = (idx, patch) => {
+    const u = [...(form.uses || [])]; u[idx] = { ...u[idx], ...patch }; setForm({ ...form, uses: u });
+  };
+  const addUse = () => setForm({ ...form, uses: [...(form.uses || []), { heading: "", description: "", source_name: "", source_url: "" }] });
+  const removeUse = (idx) => setForm({ ...form, uses: form.uses.filter((_, i) => i !== idx) });
 
   const uploadVariantImage = async (idx, e) => {
     const file = e.target.files?.[0];
@@ -152,6 +160,26 @@ export default function ProductFormModal({ editing, onClose, onSaved }) {
             </div>
           ))}
           <button type="button" onClick={addVariant} className="btn-ghost !py-1.5 !px-3 !rounded-md text-xs"><Plus size={12}/> Add variant</button>
+        </div>
+        <div>
+          <div className="label mb-2">Uses &amp; Benefits</div>
+          <p className="text-xs mb-2" style={{ color: "var(--ink-2)" }}>
+            Ayurvedic/traditional uses shown on the product page, each backed by a source link (Wikipedia, an Ayurveda reference site, etc).
+          </p>
+          {(form.uses || []).map((u, idx) => (
+            <div key={idx} className="border rounded-xl p-3 mb-2 space-y-2" style={{ borderColor: "var(--line)" }}>
+              <div className="flex items-center gap-2">
+                <input data-testid={`pf-uses-heading-${idx}`} className="input flex-1" placeholder="Heading (e.g. Traditional massage oil)" value={u.heading} onChange={(e) => updateUse(idx, { heading: e.target.value })}/>
+                <button type="button" data-testid={`pf-uses-remove-${idx}`} onClick={() => removeUse(idx)}><Trash2 size={14}/></button>
+              </div>
+              <textarea data-testid={`pf-uses-desc-${idx}`} className="input w-full" rows={2} placeholder="Description" value={u.description} onChange={(e) => updateUse(idx, { description: e.target.value })}/>
+              <div className="grid grid-cols-2 gap-2">
+                <input data-testid={`pf-uses-source-${idx}`} className="input" placeholder="Source name (e.g. Wikipedia)" value={u.source_name} onChange={(e) => updateUse(idx, { source_name: e.target.value })}/>
+                <input data-testid={`pf-uses-url-${idx}`} className="input" placeholder="Source URL (https://...)" value={u.source_url} onChange={(e) => updateUse(idx, { source_url: e.target.value })}/>
+              </div>
+            </div>
+          ))}
+          <button type="button" data-testid="pf-uses-add" onClick={addUse} className="btn-ghost !py-1.5 !px-3 !rounded-md text-xs"><Plus size={12}/> Add a use</button>
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" onClick={onClose} className="btn-ghost !rounded-md">Cancel</button>

@@ -28,6 +28,15 @@ function validateProductInput(input) {
       }
     }
   }
+  for (const u of input.uses || []) {
+    assertRequiredString(u.heading, "Use heading");
+    assertRequiredString(u.description, "Use description");
+    assertRequiredString(u.source_name, "Use source name");
+    assertRequiredString(u.source_url, "Use source URL");
+    if (!/^https?:\/\//i.test(u.source_url)) {
+      throw new ApiError(400, "Use source URL must start with http:// or https://");
+    }
+  }
 }
 
 export async function listProducts(category) {
@@ -61,6 +70,7 @@ export async function createProduct(input) {
     gallery: input.gallery || [],
     variants: normalizeVariants(input.variants),
     highlights: input.highlights || [],
+    uses: input.uses || [],
     is_active: input.is_active ?? true,
     created_at: nowIso(),
   };
@@ -83,6 +93,7 @@ export async function updateProduct(productId, input) {
     gallery: input.gallery || [],
     variants: normalizeVariants(input.variants),
     highlights: input.highlights || [],
+    uses: input.uses || [],
     is_active: input.is_active ?? true,
   };
   await db.collection("products").updateOne({ id: productId }, { $set: upd });

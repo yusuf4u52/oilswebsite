@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { Check } from "lucide-react";
+import { Check, ExternalLink } from "lucide-react";
 import { getProduct, getAllProductSlugs, getProductReviews } from "@/lib/server-api";
 import { buildProductJsonLd } from "@/lib/jsonld";
 import { SITE_URL, toAbsoluteUrl } from "@/constants/seo";
@@ -87,6 +87,34 @@ export default async function ProductDetail({ params }) {
               </div>
             </div>
           </div>
+
+          {p.uses && p.uses.length > 0 && (
+            <div className="mt-14" data-testid="product-uses">
+              <div className="label mb-1" style={{ color: "var(--amber)" }}>Uses &amp; Benefits</div>
+              <h2 className="serif text-2xl sm:text-3xl mb-6">Traditional &amp; Ayurvedic uses</h2>
+              <div className="grid sm:grid-cols-2 gap-6">
+                {p.uses.map((u, idx) => (
+                  <div key={idx} className="rounded-2xl p-5" style={{ background: "var(--bg-2)" }}>
+                    <div className="font-medium">{u.heading}</div>
+                    <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--ink-2)" }}>{u.description}</p>
+                    <a
+                      data-testid={`product-use-source-${idx}`}
+                      href={u.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex items-center gap-1 text-xs hover:underline"
+                      style={{ color: "var(--brand)" }}
+                    >
+                      Source: {u.source_name} <ExternalLink size={12} />
+                    </a>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-xs" style={{ color: "var(--ink-2)" }}>
+                Traditional and Ayurvedic use information is provided for general education, drawn from the cited sources, and is not a substitute for professional medical advice.
+              </p>
+            </div>
+          )}
 
           <ProductReviews productSlug={p.slug} />
         </ProductVariantProvider>

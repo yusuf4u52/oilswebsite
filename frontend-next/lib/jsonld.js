@@ -27,5 +27,12 @@ export function buildProductJsonLd(p, siteUrl, ratingSummary) {
       reviewCount: ratingSummary.count,
     };
   }
+  if (p.uses && p.uses.length > 0) {
+    jsonLd.additionalProperty = p.uses.map((u) => ({
+      "@type": "PropertyValue",
+      name: u.heading,
+      value: u.description,
+    }));
+  }
   return jsonLd;
 }
