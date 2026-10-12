@@ -69,7 +69,7 @@ export default function CartDrawer() {
         {items.length > 0 && (
           <div className="border-t p-6 space-y-3" style={{ borderColor: "var(--line)" }}>
             <div className="flex justify-between text-sm"><span style={{ color: "var(--ink-2)" }}>Subtotal</span><span>{inr(subtotal)}</span></div>
-            <div className="flex justify-between text-sm"><span style={{ color: "var(--ink-2)" }}>Delivery</span><span>{delivery === 0 ? "FREE" : inr(delivery)}</span></div>
+            <div className="flex justify-between text-sm"><span style={{ color: "var(--ink-2)" }}>Delivery</span><span data-testid="cart-delivery">{delivery === 0 ? "FREE" : inr(delivery)}</span></div>
             <div className="flex justify-between text-lg font-semibold"><span>Total</span><span data-testid="cart-total">{inr(total)}</span></div>
             <button data-testid="cart-checkout" onClick={() => { setOpen(false); router.push("/checkout"); }} className="btn-primary w-full justify-center">Checkout</button>
           </div>

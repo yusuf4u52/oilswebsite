@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Leaf, Droplet } from "lucide-react";
 import { inr } from "@/lib/utils";
-import { getProducts } from "@/lib/server-api";
+import { getProducts, getShipping } from "@/lib/server-api";
 import HeroMedia from "@/components/HeroMedia";
 import { DEFAULT_TITLE } from "@/constants/seo";
 
@@ -16,7 +16,8 @@ export const metadata = {
 };
 
 export default async function Home() {
-  const products = await getProducts();
+  const [products, shipping] = await Promise.all([getProducts(), getShipping()]);
+  const freeAbove = shipping.delivery_fee > 0 ? shipping.free_delivery_threshold : null;
 
   return (
     <div>
@@ -87,10 +88,12 @@ export default async function Home() {
             <div className="relative rounded-[2rem] overflow-hidden aspect-[4/5] grain" style={{ background: "var(--bg-2)" }}>
               <HeroMedia />
             </div>
-            <div className="absolute -bottom-6 -left-6 bg-white border rounded-2xl p-4 shadow-sm hidden sm:block" style={{ borderColor: "var(--line)" }}>
-              <div className="label">Free delivery</div>
-              <div className="serif text-lg">on orders above ₹499</div>
-            </div>
+            {(shipping.delivery_fee === 0 || freeAbove != null) && (
+              <div className="absolute -bottom-6 -left-6 bg-white border rounded-2xl p-4 shadow-sm hidden sm:block" style={{ borderColor: "var(--line)" }}>
+                <div className="label">Free delivery</div>
+                <div className="serif text-lg">{freeAbove != null ? `on orders above ${inr(freeAbove)}` : "on every order"}</div>
+              </div>
+            )}
           </div>
         </div>
       </section>

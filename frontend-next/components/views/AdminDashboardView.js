@@ -13,6 +13,7 @@ import OrdersTab from "@/components/admin/OrdersTab";
 import CustomersTab from "@/components/admin/CustomersTab";
 import ProductsTab from "@/components/admin/ProductsTab";
 import ReviewsTab from "@/components/admin/ReviewsTab";
+import ShippingTab from "@/components/admin/ShippingTab";
 import ProductFormModal from "@/components/admin/ProductFormModal";
 
 export default function AdminDashboardView() {
@@ -122,7 +123,7 @@ export default function AdminDashboardView() {
 
         {/* tabs */}
         <div className="flex gap-2 mt-8 border-b" style={{ borderColor: "var(--line)" }}>
-          {["orders", "products", "customers", "reviews"].map((t) => (
+          {["orders", "products", "customers", "reviews", "shipping"].map((t) => (
             <button
               data-testid={`admin-tab-${t}`}
               key={t}
@@ -141,6 +142,7 @@ export default function AdminDashboardView() {
           <ProductsTab products={products} onNew={openNew} onEdit={openEdit} onDelete={deleteProduct} />
         )}
         {tab === "reviews" && <ReviewsTab reviews={reviews} onDelete={deleteReview} />}
+        {tab === "shipping" && <ShippingTab />}
       </div>
 
       {showForm && (

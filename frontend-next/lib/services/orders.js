@@ -3,6 +3,7 @@ import { ApiError } from "@/lib/api-error";
 import { getDb } from "@/lib/db/connect";
 import { nowIso, stripId } from "@/lib/db/util";
 import { computeDelivery } from "@/lib/pricing";
+import { getShippingSettings } from "@/lib/services/settings";
 import { RAZORPAY_MODE, RAZORPAY_KEY_ID } from "@/lib/config/env";
 import { createRazorpayOrder, verifyPaymentSignature } from "@/lib/integrations/razorpay";
 import { sendOrderStatusSms } from "@/lib/integrations/sms";
@@ -38,9 +39,9 @@ async function resolveOrderItems(db, rawItems) {
   return items;
 }
 
-export function computeTotals(items) {
+export function computeTotals(items, shipping) {
   const subtotalRaw = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-  const delivery = computeDelivery(subtotalRaw);
+  const delivery = computeDelivery(subtotalRaw, shipping);
   const subtotal = Math.round(subtotalRaw * 100) / 100;
   const total = Math.round((subtotal + delivery) * 100) / 100;
   return { subtotal, delivery, total };
@@ -61,7 +62,8 @@ export async function createOrder(user, input) {
   if (!address) throw new ApiError(400, "Address not found");
 
   const items = await resolveOrderItems(db, input.items);
-  const { subtotal, delivery, total } = computeTotals(items);
+  const shipping = await getShippingSettings();
+  const { subtotal, delivery, total } = computeTotals(items, shipping);
   const amountPaise = Math.round(total * 100);
   const paymentMethod = input.payment_method || "razorpay";
   if (paymentMethod === "razorpay" && amountPaise < 100) {

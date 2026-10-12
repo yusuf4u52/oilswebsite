@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { computeDelivery } from "@/lib/pricing";
+import api from "@/lib/api";
+import { computeDelivery, DEFAULT_SHIPPING } from "@/lib/pricing";
 
 const CartCtx = createContext(null);
 
@@ -11,6 +12,16 @@ export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
   const [hydrated, setHydrated] = useState(false);
   const [open, setOpen] = useState(false);
+  const [shipping, setShipping] = useState(DEFAULT_SHIPPING);
+
+  // Admin-configured fee/threshold. The server recomputes totals with the
+  // same stored settings when the order is placed, so the defaults above are
+  // only a display fallback if this request fails.
+  useEffect(() => {
+    api.get("/settings/shipping")
+      .then((res) => setShipping(res.data))
+      .catch(() => {});
+  }, []);
 
   // Reading localStorage during the useState initializer (the CRA version's
   // approach) crashes on the server. Read it here instead, once mounted.
@@ -70,7 +81,7 @@ export function CartProvider({ children }) {
 
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const count = items.reduce((s, i) => s + i.qty, 0);
-  const delivery = computeDelivery(subtotal);
+  const delivery = computeDelivery(subtotal, shipping);
   const total = subtotal + delivery;
 
   return (

@@ -142,6 +142,26 @@ async function deleteProductById(productId) {
   await db.collection("products").deleteMany({ id: productId });
 }
 
+/** Reads a `settings` doc by id (e.g. "shipping") - null if it doesn't exist. */
+async function getSettingDoc(id) {
+  const db = await getDb();
+  return db.collection("settings").findOne({ id }, { projection: { _id: 0 } });
+}
+
+/**
+ * Writes a `settings` doc by id, or deletes it when `doc` is null - pair a
+ * getSettingDoc() in beforeAll with this in afterAll to put back whatever
+ * the developer had configured before the test ran.
+ */
+async function setSettingDoc(id, doc) {
+  const db = await getDb();
+  if (doc == null) {
+    await db.collection("settings").deleteMany({ id });
+  } else {
+    await db.collection("settings").replaceOne({ id }, { ...doc, id }, { upsert: true });
+  }
+}
+
 async function closeDb() {
   if (client) {
     await client.close();
@@ -162,5 +182,7 @@ module.exports = {
   findOrdersByUser,
   insertProduct,
   deleteProductById,
+  getSettingDoc,
+  setSettingDoc,
   closeDb,
 };

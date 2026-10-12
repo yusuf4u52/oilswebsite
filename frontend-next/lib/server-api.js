@@ -1,5 +1,6 @@
 import { listProducts, getProductBySlug } from "@/lib/services/products";
 import { listReviewsForProduct, getRatingSummary } from "@/lib/services/reviews";
+import { getShippingSettings } from "@/lib/services/settings";
 
 // Server Components call the same service functions the API routes use directly -
 // no HTTP self-fetch, since this now runs in the same process as the DB layer.
@@ -23,4 +24,8 @@ export async function getProductReviews(productId) {
     getRatingSummary(productId),
   ]);
   return { reviews, summary };
+}
+
+export async function getShipping() {
+  return getShippingSettings();
 }
